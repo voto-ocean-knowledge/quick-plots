@@ -1,0 +1,9 @@
+name: quickplots
+channels:
+  - conda-forge
+dependencies:
+        - numpy
+        - matplotlib
+        - xarray
+        - netcdf4
+        - cmocean

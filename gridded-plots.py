@@ -10,6 +10,7 @@ import xarray as xr
 from cmocean import cm as cmo
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+import matplotlib
 import numpy as np
 from pathlib import Path
 import shutil
@@ -168,14 +169,19 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
             percentile = 0
         elif 'chlor' in variable or 'DOWN' in variable:
             std_devs = 0
-            percentile = 0
-        else:
-            std_devs = 2
             percentile = 0.5
-        # dataset = prepare_for_plotting(dataset, variable, std_devs=std_devs, percentile=percentile)
+        else:
+            std_devs = 3
+            percentile = 0.5
+        dataset = prepare_for_plotting(dataset, variable, std_devs=std_devs, percentile=percentile)
         ds = dataset[variable]
-        pcol = ax.pcolor(ds.time, ds.depth, ds.values, cmap=colormap, shading='auto')
-        #dataset[variable].T.plot(yincrease=False, y="depth", x="time", cmap=colormap, ax=ax)
+        if 'DOWN' in variable:
+            vals = ds.values
+            vals[vals < 0] = 0
+            pcol = ax.pcolor(ds.time, ds.depth, ds.values, cmap=colormap, shading='auto',
+                             norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
+        else:
+            pcol = ax.pcolor(ds.time, ds.depth, ds.values, cmap=colormap, shading='auto')
         ax.set_ylim(valid_depths.max(), valid_depths.min())
         ax.set_title(str(title))
         if i != num_variables-1:

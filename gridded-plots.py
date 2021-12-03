@@ -97,8 +97,6 @@ def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
 
         mask = (arr < ll) | (arr > ul)
         arr[mask] = np.nan
-    else:
-        print('no std')
 
     # nanpercentile
     if percentile:
@@ -166,13 +164,16 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         valid_depths = dataset[variable].depth.data[var_sum != 0.0]
         if 'cdom' in variable:
             std_devs = 4
-            percentile = 0
+            percentile = 2
+        elif 'backs' in variable:
+            std_devs = 2
+            percentile = 0.5
         elif 'chlor' in variable or 'DOWN' in variable:
             std_devs = 0
-            percentile = 0.5
+            percentile = 0.2
         else:
-            std_devs = 3
-            percentile = 0.5
+            std_devs = 4
+            percentile = 0.1
         dataset = prepare_for_plotting(dataset, variable, std_devs=std_devs, percentile=percentile)
         ds = dataset[variable]
         if 'DOWN' in variable:
@@ -186,9 +187,12 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         ax.set_title(str(title))
         if i != num_variables-1:
             ax.tick_params(labelbottom=False)
+        else:
+            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))
+            plt.xticks(rotation=45)
         ax.set(xlabel='', ylabel='Depth (m)')
         plt.colorbar(mappable=pcol, ax=ax, label=f'{ds.name} ({ds.units})')
-        #ax.invert_yaxis()
+    plt.tight_layout()
     fig.savefig(plots_dir / f'all_plots.jpg', format='jpeg')
 
 

@@ -15,6 +15,8 @@ import numpy as np
 from pathlib import Path
 import shutil
 from collections import defaultdict
+import boto3
+from botocore.exceptions import ClientError
 
 
 def sort_by_priority_list(values, priority):
@@ -71,7 +73,8 @@ def create_plots(nc, output_dir):
     to_plot = sort_by_priority_list(to_plot_unsort, glider_variables)
     #for i in range(len(to_plot)):
     #    plotter(ds, to_plot[i], cmap_dict[to_plot[i]], to_plot[i], output_dir)
-    multiplotter(ds, to_plot, output_dir)
+    image_file = multiplotter(ds, to_plot, output_dir)
+    return image_file
 
 
 def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
@@ -192,7 +195,33 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         ax.set(xlabel='', ylabel='Depth (m)')
         plt.colorbar(mappable=pcol, ax=ax, label=f'{ds.name} ({ds.units})')
     plt.tight_layout()
-    fig.savefig(plots_dir / f'all_plots.jpg', format='jpeg')
+    filename = plots_dir / f'grid_plots.jpg'
+    fig.savefig(filename, format='jpeg')
+    return filename
+
+
+def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
+    """Upload a file to an S3 bucket
+    Original function by Isabelle Giddy
+
+    :param file_name: File to upload
+    :param bucket: Bucket to upload to
+    :param object_name: S3 object name. If not specified then file_name is used
+    :return: True if file was uploaded, else False
+    """
+    boto3.setup_default_session(profile_name=profile_name)
+
+    # If S3 object_name was not specified, use file_name
+    if object_name is None:
+        object_name = file_name
+
+    # Upload the file
+    s3_client = boto3.client('s3')
+    try:
+        s3_client.upload_file(file_name, bucket, object_name)
+    except ClientError as e:
+        return False
+    return True
 
 
 if __name__ == '__main__':
@@ -201,4 +230,8 @@ if __name__ == '__main__':
         outdir = Path(sys.argv[2])
     else:
         outdir = Path('plots')
-    create_plots(netcdf, outdir)
+    image_file = create_plots(netcdf, outdir)
+    if 'upload' in sys.argv:
+        path_parts = str(outdir).split('/')
+        s3_filename = f'{path_parts[-2]}_{path_parts[-1]}.jpg'
+        upload_to_s3(str(image_file), 's3-bucket-data-incoming', object_name=s3_filename, profile_name='produser')

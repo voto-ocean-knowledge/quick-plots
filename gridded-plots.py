@@ -178,10 +178,10 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         if 'DOWN' in variable:
             vals = ds.values
             vals[vals < 0] = 0
-            pcol = ax.pcolor(ds.time, ds.depth, ds.values, cmap=colormap, shading='auto',
+            pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto',
                              norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
         else:
-            pcol = ax.pcolor(ds.time, ds.depth, ds.values, cmap=colormap, shading='auto')
+            pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
         ax.set_ylim(valid_depths.max(), valid_depths.min())
         ax.set_title(str(title))
         if i != num_variables-1:

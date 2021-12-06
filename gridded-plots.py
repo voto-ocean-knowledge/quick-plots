@@ -57,9 +57,8 @@ cmap_dict['conductivity'] = cmo.haline
 cmap_dict['salinity'] = cmo.haline
 cmap_dict['density'] = cmo.dense
 cmap_dict['potential_density'] = cmo.dense
-cmap_dict['oxygen_concentration'] = cmo.oxy
 cmap_dict['chlorophyll'] = cmo.algae
-cmap_dict['cdom'] = cmo.algae
+cmap_dict['cdom'] = cmo.turbid
 
 
 def create_plots(nc, output_dir):
@@ -154,7 +153,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
     The intended use of the plotter function is to iterate over a list of variables,
     plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dictionary"""
     num_variables = len(variables)
-    fig, axs = plt.subplots(num_variables, 1, figsize=(12, 4 * num_variables))
+    fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3 * num_variables))
     axs = axs.ravel()
     for i, ax in enumerate(axs):
         variable = variables[i]

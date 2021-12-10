@@ -6,6 +6,7 @@ $ python gridded-plots.py path/to/nc/file path/to/plotting/dir
 """
 
 import sys
+import gsw
 import xarray as xr
 from cmocean import cm as cmo
 import matplotlib.pyplot as plt
@@ -17,7 +18,8 @@ import shutil
 from collections import defaultdict
 import boto3
 from botocore.exceptions import ClientError
-
+from matplotlib import style
+style.use('presentation.mplstyle')
 
 def sort_by_priority_list(values, priority):
     priority_dict = defaultdict(
@@ -62,19 +64,37 @@ cmap_dict['potential_density'] = cmo.dense
 cmap_dict['chlorophyll'] = cmo.algae
 cmap_dict['cdom'] = cmo.turbid
 
-
 def create_plots(nc, output_dir):
-    if Path.exists(Path.absolute(output_dir)):
-        shutil.rmtree(output_dir)
-    output_dir.mkdir()
+    if not Path.exists(Path.absolute(output_dir)):
+        output_dir.mkdir()
     ds = xr.open_dataset(nc)
     a = list(ds.keys())  # list data variables in ds
     to_plot_unsort = list(set(a).intersection(glider_variables))  # find elements in glider_variables relevant to this dataset
     to_plot = sort_by_priority_list(to_plot_unsort, glider_variables)
     #for i in range(len(to_plot)):
     #    plotter(ds, to_plot[i], cmap_dict[to_plot[i]], to_plot[i], output_dir)
-    image_file = multiplotter(ds, to_plot, output_dir)
+    image_file = multiplotter(ds, to_plot, output_dir, glider=ds.glider_serial, mission=ds.deployment_id)
+    # image_file = tempsal_scatter(ds, output_dir)
     return image_file
+
+def tempsal_scatter(dataset, plots_dir):
+    ds_temp = prepare_for_plotting(dataset, 'temperature', std_devs=0, percentile=1)['temperature']
+    ds_sal = prepare_for_plotting(dataset, 'salinity', std_devs=0, percentile=1)['salinity']
+
+    sal_lim = [np.nanmin(ds_sal.values), np.nanmax(ds_sal.values)]
+    temp_lim = [np.nanmin(ds_temp.values), np.nanmax(ds_temp.values)]
+    sal_ex, temp_ex = np.meshgrid(np.arange(sal_lim[0], sal_lim[1], 0.01), np.arange(temp_lim[0], temp_lim[1], 0.01))
+    seawater_density = gsw.rho(sal_ex, temp_ex, 0)
+    den_conts = np.arange(0, 35, 1)
+
+    fig, ax = plt.subplots(1, 1, figsize=(14, 14))
+    mappable0 = ax.contour(sal_ex[0, :], temp_ex[:, 0], seawater_density - 1000, den_conts, colors='k', zorder=-10)
+    ax.scatter(ds_sal.values, ds_temp.values)
+    ax.clabel(mappable0, inline=1, inline_spacing=0, fmt='%i', fontsize=12)
+    ax.set(xlim=sal_lim, ylim=temp_lim, xlabel=f'Salinity (psu)', ylabel='Temperature ($^{\circ}$C)')
+    figpath = plots_dir / f'tempsal_scatter'
+    fig.savefig(figpath, format='jpeg')
+    return figpath
 
 
 def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
@@ -192,10 +212,11 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         else:
             ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))
             plt.xticks(rotation=45)
-        ax.set(xlabel='', ylabel='Depth (m)')
-        plt.colorbar(mappable=pcol, ax=ax, label=f'{ds.name} ({ds.units})')
+        ymin, ymax = ax.get_ylim()
+        ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
+        plt.colorbar(mappable=pcol, ax=ax, label=f'{ds.units}', aspect=13, pad=0.02)
     plt.tight_layout()
-    filename = plots_dir / f'grid_plots.jpg'
+    filename = plots_dir / f'SEA{glider}_M{mission}.jpg'
     fig.savefig(filename, format='jpeg')
     return filename
 
@@ -232,6 +253,6 @@ if __name__ == '__main__':
         outdir = Path('plots')
     image_file = create_plots(netcdf, outdir)
     if 'upload' in sys.argv:
-        path_parts = str(outdir).split('/')
-        s3_filename = f'{path_parts[-2]}_{path_parts[-1]}.jpg'
-        upload_to_s3(str(image_file), 's3-bucket-data-incoming', object_name=s3_filename, profile_name='produser')
+        path_parts = str(image_file).split('/')
+        s3_filename = f'complete_mission_grid/{path_parts[-1]}'
+        upload_to_s3(str(image_file), 'voto-figures', object_name=s3_filename, profile_name='produser')

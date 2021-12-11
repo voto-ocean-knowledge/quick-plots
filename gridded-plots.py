@@ -19,14 +19,17 @@ from collections import defaultdict
 import boto3
 from botocore.exceptions import ClientError
 from matplotlib import style
+
 style.use('presentation.mplstyle')
+
 
 def sort_by_priority_list(values, priority):
     priority_dict = defaultdict(
-        lambda: len(priority), zip(priority, range(len(priority)),),
+        lambda: len(priority), zip(priority, range(len(priority)), ),
     )
     priority_getter = priority_dict.__getitem__
     return sorted(values, key=priority_getter)
+
 
 # list of variables we want to plot in order
 glider_variables = (
@@ -62,7 +65,31 @@ cmap_dict['potential_density'] = cmo.dense
 cmap_dict['chlorophyll'] = cmo.algae
 cmap_dict['cdom'] = cmo.turbid
 
-labels_dict = {'Celsius': '$^{\circ$C'}
+labels_dict = {'Celsius': '$^{\\circ}$C',
+               'None': '',
+               'ug m-3': 'µg m$^{-1}$',
+               'umol l-1': 'µmol l$^{-1}$',
+               'W/m^2/nm': 'W m$^{-2}$ nm$^{-1}$',
+               'μE/m^2/s': 'µE m$^{-1}$ s$^{-1}$',
+               '1': '',
+               'kg m-3': 'kg m$^{-3}$',
+               'g kg^-1': 'g kg$^{-1}$',
+               'arbitrary': '',
+               'backscatter_700': 'backscatter 700 nm',
+               'oxygen_concentration': 'oxygen concentration',
+               'DOWNWELLING_PAR': 'photosynthetically active radiation',
+               'cdom': 'colored dissolved organic matter',
+               'potential_density': 'potential density',
+               'potential_temperature': 'potential density',
+               'absolute_salinity': 'absolute salinity'
+               }
+
+
+def label_replace(lab):
+    if lab in labels_dict.keys():
+        lab = labels_dict[lab]
+    return lab
+
 
 def create_plots(nc, output_dir):
     if not Path.exists(Path.absolute(output_dir)):
@@ -70,9 +97,10 @@ def create_plots(nc, output_dir):
     ds = xr.open_dataset(nc)
     ds = additional_vars(ds)
     a = list(ds.keys())  # list data variables in ds
-    to_plot_unsort = list(set(a).intersection(glider_variables))  # find elements in glider_variables relevant to this dataset
+    to_plot_unsort = list(
+        set(a).intersection(glider_variables))  # find elements in glider_variables relevant to this dataset
     to_plot = sort_by_priority_list(to_plot_unsort, glider_variables)
-    #for i in range(len(to_plot)):
+    # for i in range(len(to_plot)):
     #    plotter(ds, to_plot[i], cmap_dict[to_plot[i]], to_plot[i], output_dir)
     image_file = multiplotter(ds, to_plot, output_dir, glider=ds.glider_serial, mission=ds.deployment_id)
     # image_file = tempsal_scatter(ds, output_dir)
@@ -91,6 +119,7 @@ def additional_vars(ds):
         ab_sal.attrs = attrs
         ds['absolute_salinity'] = ab_sal
     return ds
+
 
 def tempsal_scatter(dataset, plots_dir):
     ds_temp = prepare_for_plotting(dataset, 'temperature', std_devs=0, percentile=1)['temperature']
@@ -138,19 +167,19 @@ def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
         mask = (arr < ll) | (arr > ul)
         arr[mask] = np.nan
 
-        arr_max[arr_in>ul] = True
-        arr_min[arr_in<ll] = True
+        arr_max[arr_in > ul] = True
+        arr_min[arr_in < ll] = True
 
     # nanpercentile
     if percentile:
         ll = np.nanpercentile(arr_in, percentile)
-        ul = np.nanpercentile(arr_in, 100-percentile)
+        ul = np.nanpercentile(arr_in, 100 - percentile)
 
         mask = (arr < ll) | (arr > ul)
         arr[mask] = np.nan
 
-        arr_max[arr_in>ul] = True
-        arr_min[arr_in<ll] = True
+        arr_max[arr_in > ul] = True
+        arr_min[arr_in < ll] = True
     # tbi
     arr_in[arr_min] = np.nanmin(arr)
     arr_in[arr_max] = np.nanmax(arr)
@@ -208,7 +237,6 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
     for i, ax in enumerate(axs):
         variable = variables[i]
         colormap = cmap_dict[variable]
-        title = variable
         var_sum = np.nansum(dataset[variable].data, 1)
         valid_depths = dataset[variable].depth.data[var_sum != 0.0]
         if 'cdom' in variable:
@@ -233,15 +261,21 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         else:
             pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
         ax.set_ylim(valid_depths.max(), valid_depths.min())
-        ax.set_title(str(title))
-        if i != num_variables-1:
+        ax.set_title(label_replace(str(variable)))
+        if i != num_variables - 1:
             ax.tick_params(labelbottom=False)
         else:
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))
-            plt.xticks(rotation=45)
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            ax.xaxis.set_minor_locator(mdates.DayLocator((1, 5, 10, 15, 20, 25)))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d\n%b %y"))
+            ax.xaxis.set_minor_formatter(mdates.DateFormatter("%d"))
+            ax.tick_params(axis="x", which="both", length=4)
+            plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
+            # ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))
+            # plt.xticks(rotation=45)
         ymin, ymax = ax.get_ylim()
         ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
-        plt.colorbar(mappable=pcol, ax=ax, label=f'{ds.units}', aspect=13, pad=0.02)
+        plt.colorbar(mappable=pcol, ax=ax, label=label_replace(ds.units), aspect=13, pad=0.02)
     plt.tight_layout()
     filename = plots_dir / f'SEA{glider}_M{mission}.jpg'
     print(filename)

@@ -14,7 +14,8 @@ import matplotlib.dates as mdates
 import matplotlib
 import numpy as np
 from pathlib import Path
-import shutil
+import pandas
+import datetime
 from collections import defaultdict
 import boto3
 from botocore.exceptions import ClientError
@@ -91,7 +92,7 @@ def label_replace(lab):
     return lab
 
 
-def create_plots(nc, output_dir):
+def create_plots(nc, output_dir, grid):
     if not Path.exists(Path.absolute(output_dir)):
         output_dir.mkdir()
     ds = xr.open_dataset(nc)
@@ -102,7 +103,7 @@ def create_plots(nc, output_dir):
     to_plot = sort_by_priority_list(to_plot_unsort, glider_variables)
     # for i in range(len(to_plot)):
     #    plotter(ds, to_plot[i], cmap_dict[to_plot[i]], to_plot[i], output_dir)
-    image_file = multiplotter(ds, to_plot, output_dir, glider=ds.glider_serial, mission=ds.deployment_id)
+    image_file = multiplotter(ds, to_plot, output_dir, glider=ds.glider_serial, mission=ds.deployment_id, grid=grid)
     # image_file = tempsal_scatter(ds, output_dir)
     return image_file
 
@@ -135,7 +136,7 @@ def tempsal_scatter(dataset, plots_dir):
     mappable0 = ax.contour(sal_ex[0, :], temp_ex[:, 0], seawater_density - 1000, den_conts, colors='k', zorder=-10)
     ax.scatter(ds_sal.values, ds_temp.values)
     ax.clabel(mappable0, inline=1, inline_spacing=0, fmt='%i', fontsize=12)
-    ax.set(xlim=sal_lim, ylim=temp_lim, xlabel=f'Salinity (psu)', ylabel='Temperature ($^{\circ}$C)')
+    ax.set(xlim=sal_lim, ylim=temp_lim, xlabel=f'Salinity (psu)', ylabel='Temperature ($^{\\circ}$C)')
     figpath = plots_dir / f'tempsal_scatter'
     fig.savefig(figpath, format='jpeg')
     return figpath
@@ -199,7 +200,7 @@ def plotter(dataset, variable, colourmap, title, plots_dir, glider='', mission='
     title: variable name included as title to easily identify plot
 
     The intended use of the plotter function is to iterate over a list of variables,
-    plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dictionary"""
+    plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
 
     # find max depth the given variable was measures to
     var_sum = np.nansum(dataset[variable].data, 1)
@@ -220,7 +221,7 @@ def plotter(dataset, variable, colourmap, title, plots_dir, glider='', mission='
     return fig, ax
 
 
-def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
+def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True):
     """Create time depth profile coloured by desired variable
 
     Input:
@@ -230,15 +231,17 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
     title: variable name included as title to easily identify plot
 
     The intended use of the plotter function is to iterate over a list of variables,
-    plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dictionary"""
+    plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
+    if not grid:
+        end = pandas.to_datetime(dataset.time.values[-1])
+        dataset = dataset.sel(time=slice(end-datetime.timedelta(days=7), end))
     num_variables = len(variables)
     fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3 * num_variables))
     axs = axs.ravel()
     for i, ax in enumerate(axs):
         variable = variables[i]
         colormap = cmap_dict[variable]
-        var_sum = np.nansum(dataset[variable].data, 1)
-        valid_depths = dataset[variable].depth.data[var_sum != 0.0]
+
         if 'cdom' in variable:
             std_devs = 4
             percentile = 2
@@ -256,29 +259,53 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         if 'DOWN' in variable:
             vals = ds.values
             vals[vals < 0] = 0
-            pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto',
-                             norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
+            vals[vals==9999] = np.nan
+            if grid:
+                pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto',
+                                norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
+            else:
+                pcol = ax.scatter(ds.time.values, ds.depth, c=ds.values, cmap=colormap,
+                                 norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
         else:
-            pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
-        ax.set_ylim(valid_depths.max(), valid_depths.min())
+            if grid:
+                pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
+            else:
+                pcol = ax.scatter(ds.time.values, ds.depth, c=ds.values, cmap=colormap)
+
+        if grid:
+            var_sum = np.nansum(dataset[variable].data, 1)
+            valid_depths = dataset[variable].depth.data[var_sum != 0.0]
+            ax.set_ylim(valid_depths.max(), valid_depths.min())
+        else:
+            valid_depths = dataset.depth[~np.isnan(dataset[variable])]
+            ax.set_ylim(valid_depths.min(), valid_depths.max())
         ax.set_title(label_replace(str(variable)))
+        if grid:
+            days =(1, 5, 10, 15, 20, 25)
+        else:
+            days = np.arange(1, 31)
         if i != num_variables - 1:
+            ax.xaxis.set_major_locator(mdates.MonthLocator())
+            ax.xaxis.set_minor_locator(mdates.DayLocator(days))
             ax.tick_params(labelbottom=False)
         else:
             ax.xaxis.set_major_locator(mdates.MonthLocator())
-            ax.xaxis.set_minor_locator(mdates.DayLocator((1, 5, 10, 15, 20, 25)))
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d\n%b %y"))
+            ax.xaxis.set_minor_locator(mdates.DayLocator(days))
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d\n%b %Y"))
             ax.xaxis.set_minor_formatter(mdates.DateFormatter("%d"))
             ax.tick_params(axis="x", which="both", length=4)
             plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
             # ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))
             # plt.xticks(rotation=45)
-        ymin, ymax = ax.get_ylim()
-        ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
+        if grid:
+            ymin, ymax = ax.get_ylim()
+            ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
+        else:
+            ax.set(xlabel='', ylabel='Depth (m)')
+            ax.invert_yaxis()
         plt.colorbar(mappable=pcol, ax=ax, label=label_replace(ds.units), aspect=13, pad=0.02)
     plt.tight_layout()
     filename = plots_dir / f'SEA{glider}_M{mission}.jpg'
-    print(filename)
     fig.savefig(filename, format='jpeg')
     return filename
 
@@ -290,6 +317,7 @@ def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
     :param file_name: File to upload
     :param bucket: Bucket to upload to
     :param object_name: S3 object name. If not specified then file_name is used
+    :param profile_name: name of AWS profile to use for credentials
     :return: True if file was uploaded, else False
     """
     boto3.setup_default_session(profile_name=profile_name)
@@ -302,7 +330,7 @@ def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
     s3_client = boto3.client('s3')
     try:
         s3_client.upload_file(file_name, bucket, object_name)
-    except ClientError as e:
+    except ClientError:
         return False
     return True
 
@@ -313,8 +341,16 @@ if __name__ == '__main__':
         outdir = Path(sys.argv[2])
     else:
         outdir = Path('plots')
-    image_file = create_plots(netcdf, outdir)
+    if 'scatter' in sys.argv:
+        grid=False
+    else:
+        grid=True
+    image_file = create_plots(netcdf, outdir, grid)
     if 'upload' in sys.argv:
         path_parts = str(image_file).split('/')
-        s3_filename = f'complete_mission_grid/{path_parts[-1]}'
+        if grid:
+            root_dir = 'complete_mission_grid'
+        else:
+            root_dir = 'nrt_mission_scatter'
+        s3_filename = f'{root_dir}/{path_parts[-1]}'
         upload_to_s3(str(image_file), 'voto-figures', object_name=s3_filename, profile_name='produser')

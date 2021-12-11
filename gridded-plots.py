@@ -80,7 +80,7 @@ labels_dict = {'Celsius': '$^{\\circ}$C',
                'DOWNWELLING_PAR': 'photosynthetically active radiation',
                'cdom': 'colored dissolved organic matter',
                'potential_density': 'potential density',
-               'potential_temperature': 'potential density',
+               'potential_temperature': 'potential temperature',
                'absolute_salinity': 'absolute salinity'
                }
 

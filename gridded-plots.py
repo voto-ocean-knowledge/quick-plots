@@ -40,11 +40,11 @@ glider_variables = (
     'oxygen_concentration',
     'chlorophyll',
     'cdom',
-    'backscatter_700',
+#    'backscatter_700',
     'DOWNWELLING_PAR',
-    'DOWN_IRRADIANCE380',
-    'DOWN_IRRADIANCE490',
-    'DOWN_IRRADIANCE532',
+#    'DOWN_IRRADIANCE380',
+#    'DOWN_IRRADIANCE490',
+#    'DOWN_IRRADIANCE532',
     'molar_nitrate'
 )
 
@@ -233,6 +233,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
     The intended use of the plotter function is to iterate over a list of variables,
     plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
     if not grid:
+        dataset = dataset.where(dataset.profile_direction<0.)
         end = pandas.to_datetime(dataset.time.values[-1])
         dataset = dataset.sel(time=slice(end-datetime.timedelta(days=7), end))
     num_variables = len(variables)

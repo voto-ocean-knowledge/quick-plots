@@ -30,20 +30,17 @@ def sort_by_priority_list(values, priority):
 
 # list of variables we want to plot in order
 glider_variables = (
-    'temperature',
-    'salinity',
-    'density',
+    'potential_temperature',
+    'absolute_salinity',
+    'potential_density',
     'oxygen_concentration',
     'chlorophyll',
     'cdom',
-    'conductivity',
-    'potential_density',
-    'potential_temperature',
     'backscatter_700',
+    'DOWNWELLING_PAR',
     'DOWN_IRRADIANCE380',
     'DOWN_IRRADIANCE490',
     'DOWN_IRRADIANCE532',
-    'DOWNWELLING_PAR',
     'molar_nitrate'
 )
 
@@ -59,15 +56,19 @@ cmap_dict['temperature'] = cmo.thermal
 cmap_dict['potential_temperature'] = cmo.thermal
 cmap_dict['conductivity'] = cmo.haline
 cmap_dict['salinity'] = cmo.haline
+cmap_dict['absolute_salinity'] = cmo.haline
 cmap_dict['density'] = cmo.dense
 cmap_dict['potential_density'] = cmo.dense
 cmap_dict['chlorophyll'] = cmo.algae
 cmap_dict['cdom'] = cmo.turbid
 
+labels_dict = {'Celsius': '$^{\circ$C'}
+
 def create_plots(nc, output_dir):
     if not Path.exists(Path.absolute(output_dir)):
         output_dir.mkdir()
     ds = xr.open_dataset(nc)
+    ds = additional_vars(ds)
     a = list(ds.keys())  # list data variables in ds
     to_plot_unsort = list(set(a).intersection(glider_variables))  # find elements in glider_variables relevant to this dataset
     to_plot = sort_by_priority_list(to_plot_unsort, glider_variables)
@@ -76,6 +77,20 @@ def create_plots(nc, output_dir):
     image_file = multiplotter(ds, to_plot, output_dir, glider=ds.glider_serial, mission=ds.deployment_id)
     # image_file = tempsal_scatter(ds, output_dir)
     return image_file
+
+
+def additional_vars(ds):
+    if 'absolute_salinity' not in list(ds):
+        ab_sal = gsw.SA_from_SP(ds['salinity'], ds['pressure'].values, ds['longitude'].values, ds['latitude'].values)
+        attrs = ab_sal.attrs
+        attrs['long_name'] = 'absolute salinity'
+        attrs['standard_name'] = 'sea_water_absolute_salinity'
+        attrs['sources'] = 'conductivity temperature pressure longitude latitude'
+        attrs['units'] = 'g kg^-1'
+        attrs['comment'] = 'uncorrected absolute salinity'
+        ab_sal.attrs = attrs
+        ds['absolute_salinity'] = ab_sal
+    return ds
 
 def tempsal_scatter(dataset, plots_dir):
     ds_temp = prepare_for_plotting(dataset, 'temperature', std_devs=0, percentile=1)['temperature']
@@ -102,13 +117,16 @@ def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
     1. Removing outliers more than 3 std dev from the mean
     2. Interpolating over nans
     """
-    data = dataset[variable].data
+    arr = dataset[variable].data
     # Copy some of the cleaning functionality from GliderTools and use it here
     # https://github.com/GliderToolsCommunity/GliderTools/blob/master/glidertools/cleaning.py
     # e.g. remove data more than 2 standard deviations from the mean
 
-    arr = data
     arr_in = arr.copy()
+    arr_min = np.empty(np.shape(arr), dtype=bool)
+    arr_min[:] = False
+    arr_max = np.empty(np.shape(arr), dtype=bool)
+    arr_max[:] = False
     # standard deviation
     if std_devs:
         mean = np.nanmean(arr_in)
@@ -120,14 +138,23 @@ def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
         mask = (arr < ll) | (arr > ul)
         arr[mask] = np.nan
 
+        arr_max[arr_in>ul] = True
+        arr_min[arr_in<ll] = True
+
     # nanpercentile
     if percentile:
         ll = np.nanpercentile(arr_in, percentile)
         ul = np.nanpercentile(arr_in, 100-percentile)
+
         mask = (arr < ll) | (arr > ul)
         arr[mask] = np.nan
+
+        arr_max[arr_in>ul] = True
+        arr_min[arr_in<ll] = True
     # tbi
-    dataset[variable].data = data
+    arr_in[arr_min] = np.nanmin(arr)
+    arr_in[arr_max] = np.nanmax(arr)
+    dataset[variable].data = arr_in
 
     return dataset
 
@@ -217,6 +244,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission=''):
         plt.colorbar(mappable=pcol, ax=ax, label=f'{ds.units}', aspect=13, pad=0.02)
     plt.tight_layout()
     filename = plots_dir / f'SEA{glider}_M{mission}.jpg'
+    print(filename)
     fig.savefig(filename, format='jpeg')
     return filename
 

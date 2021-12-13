@@ -21,7 +21,10 @@ from matplotlib import style
 
 style.use('presentation.mplstyle')
 _log = logging.getLogger(__name__)
-logging.basicConfig(level='INFO')
+logging.basicConfig(
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    level=logging.INFO,
+    datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def sort_by_priority_list(values, priority):
@@ -241,7 +244,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
         end = pandas.to_datetime(dataset.time.values[-1])
         dataset = dataset.sel(time=slice(end - datetime.timedelta(days=7), end))
     num_variables = len(variables)
-    fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3 * num_variables))
+    fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3.5 * num_variables))
     axs = axs.ravel()
     for i, ax in enumerate(axs):
         variable = variables[i]
@@ -286,22 +289,15 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
             ax.set_ylim(valid_depths.min(), valid_depths.max())
         ax.set_title(label_replace(str(variable)))
         if grid:
-            days = (1, 5, 10, 15, 20, 25)
+            days = (5, 10, 15, 20, 25)
         else:
-            days = np.arange(1, 31)
-        if i != num_variables - 1:
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
-            ax.xaxis.set_minor_locator(mdates.DayLocator(days))
-            ax.tick_params(labelbottom=False)
-        else:
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
-            ax.xaxis.set_minor_locator(mdates.DayLocator(days))
-            ax.xaxis.set_major_formatter(mdates.DateFormatter("%d\n%b %Y"))
-            ax.xaxis.set_minor_formatter(mdates.DateFormatter("%d"))
-            ax.tick_params(axis="x", which="both", length=4)
-            plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
-            # ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))
-            # plt.xticks(rotation=45)
+            days = np.arange(2, 31)
+        ax.xaxis.set_major_locator(mdates.MonthLocator())
+        ax.xaxis.set_minor_locator(mdates.DayLocator(days))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d\n%b %Y"))
+        ax.xaxis.set_minor_formatter(mdates.DateFormatter("%d"))
+        ax.tick_params(axis="x", which="both", length=4)
+        plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
         if grid:
             ymin, ymax = ax.get_ylim()
             ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
@@ -354,7 +350,7 @@ if __name__ == '__main__':
         grid = False
     else:
         grid = True
-    _log.info(f'{datetime.datetime.now(): start plotting {netcdf} grid = {grid}}')
+    _log.info(f' start plotting {netcdf} grid = {grid}')
     image_file = create_plots(netcdf, outdir, grid)
     if 'upload' in sys.argv:
         path_parts = str(image_file).split('/')

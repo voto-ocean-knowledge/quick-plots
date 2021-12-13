@@ -6,3 +6,4 @@ cmocean
 boto3
 gsw
 cartopy
+scipy

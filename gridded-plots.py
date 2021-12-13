@@ -332,6 +332,7 @@ def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
     s3_client = boto3.client('s3')
     try:
         s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={'Metadata': {'Content-Type': ' image/png'}} )
+        _log.info(f'uploading to s3 bucket {bucket} as {object_name}')
     except ClientError:
         _log.warning(f'could not upload {file_name} to S3')
         return False
@@ -350,7 +351,7 @@ if __name__ == '__main__':
         grid = False
     else:
         grid = True
-    _log.info(f' start plotting {netcdf} grid = {grid}')
+    _log.info(f'start plotting {netcdf} grid = {grid}')
     image_file = create_plots(netcdf, outdir, grid)
     if 'upload' in sys.argv:
         path_parts = str(image_file).split('/')

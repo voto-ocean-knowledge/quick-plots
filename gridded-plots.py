@@ -4,12 +4,14 @@ Based on work by Elizabeth Siddle and Callum Rollo https://github.com/ESiddle/ba
 """
 import sys
 import logging
+import json
 import gsw
 import xarray as xr
 from cmocean import cm as cmo
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib
+import cartopy
 import numpy as np
 from pathlib import Path
 import pandas
@@ -272,38 +274,38 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
                 pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto',
                                  norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
             else:
-                pcol = ax.scatter(ds.time.values, ds.depth, c=ds.values, cmap=colormap,
+                time = ds.time.values
+                depth = ds.depth.values
+                depth_grid = np.tile(depth, (len(time), 1)).T
+                time_grid = np.tile(time, (len(depth), 1))
+                pcol = ax.scatter(time_grid, depth_grid, c=vals, cmap=colormap,
                                   norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
         else:
             if grid:
                 pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
             else:
-                pcol = ax.scatter(ds.time.values, ds.depth, c=ds.values, cmap=colormap)
+                time = ds.time.values
+                depth = ds.depth.values
+                depth_grid = np.tile(depth, (len(time), 1)).T
+                time_grid = np.tile(time, (len(depth), 1))
+                pcol = ax.scatter(time_grid, depth_grid, c=ds.values, cmap=colormap)
 
-        if grid:
-            var_sum = np.nansum(dataset[variable].data, 1)
-            valid_depths = dataset[variable].depth.data[var_sum != 0.0]
-            ax.set_ylim(valid_depths.max(), valid_depths.min())
-        else:
-            valid_depths = dataset.depth[~np.isnan(dataset[variable])]
-            ax.set_ylim(valid_depths.min(), valid_depths.max())
+        var_sum = np.nansum(dataset[variable].data, 1)
+        valid_depths = dataset[variable].depth.data[var_sum != 0.0]
+        ax.set_ylim(valid_depths.max(), valid_depths.min())
         ax.set_title(label_replace(str(variable)))
         if grid:
-            days = (5, 10, 15, 20, 25)
+            days = (1, 5, 10, 15, 20, 25)
         else:
-            days = np.arange(2, 31)
+            days = np.arange(1, 31)
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_minor_locator(mdates.DayLocator(days))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%d\n%b %Y"))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("\n%b %Y"))
         ax.xaxis.set_minor_formatter(mdates.DateFormatter("%d"))
         ax.tick_params(axis="x", which="both", length=4)
         plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
-        if grid:
-            ymin, ymax = ax.get_ylim()
-            ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
-        else:
-            ax.set(xlabel='', ylabel='Depth (m)')
-            ax.invert_yaxis()
+        ymin, ymax = ax.get_ylim()
+        ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
         plt.colorbar(mappable=pcol, ax=ax, label=label_replace(ds.units), aspect=13, pad=0.02)
     plt.tight_layout()
     filename = plots_dir / f'SEA{glider}_M{mission}.png'
@@ -337,6 +339,24 @@ def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
         _log.warning(f'could not upload {file_name} to S3')
         return False
     return True
+
+
+def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"):
+    profs = ds_grid.time.values[-10::2]
+    ds = ds_grid.sel(time=profs)
+    if Path(glider_locs_file).exists():
+        with open(glider_locs_file, 'r') as openfile:
+            locs_dict = json.load(openfile)
+    else:
+        locs_dict = {}
+    latest_locs = {'lat': list(ds.latitude.values), 'lon': list(ds.latitude.values),
+                   'time': list(ds.time.values.astype(str))}
+    locs_dict[ds.attrs['glider_serial']] = latest_locs
+    locs_dict['055'] = latest_locs
+    with open(glider_locs_file, "w") as outfile:
+        json.dump(locs_dict, outfile)
+    list(ds.time.values.astype(str))
+    pass
 
 
 if __name__ == '__main__':

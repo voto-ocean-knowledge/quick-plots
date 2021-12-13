@@ -1,11 +1,9 @@
 """
 Basic plotting functions to operate on gridded netCDF output by pyglider https://github.com/c-proof/pyglider
 Based on work by Elizabeth Siddle and Callum Rollo https://github.com/ESiddle/basestation_plotting
-To use as a standaline:
-$ python gridded-plots.py path/to/nc/file path/to/plotting/dir
 """
-
 import sys
+import logging
 import gsw
 import xarray as xr
 from cmocean import cm as cmo
@@ -22,6 +20,8 @@ from botocore.exceptions import ClientError
 from matplotlib import style
 
 style.use('presentation.mplstyle')
+_log = logging.getLogger(__name__)
+logging.basicConfig(level='INFO')
 
 
 def sort_by_priority_list(values, priority):
@@ -40,11 +40,11 @@ glider_variables = (
     'oxygen_concentration',
     'chlorophyll',
     'cdom',
-#    'backscatter_700',
+    #    'backscatter_700',
     'DOWNWELLING_PAR',
-#    'DOWN_IRRADIANCE380',
-#    'DOWN_IRRADIANCE490',
-#    'DOWN_IRRADIANCE532',
+    #    'DOWN_IRRADIANCE380',
+    #    'DOWN_IRRADIANCE490',
+    #    'DOWN_IRRADIANCE532',
     'molar_nitrate'
 )
 
@@ -94,13 +94,15 @@ def label_replace(lab):
 
 def create_plots(nc, output_dir, grid):
     if not Path.exists(Path.absolute(output_dir)):
-        output_dir.mkdir()
+        output_dir.mkdir(parents=True)
+    _log.info(f'opening {nc}')
     ds = xr.open_dataset(nc)
     ds = additional_vars(ds)
     a = list(ds.keys())  # list data variables in ds
     to_plot_unsort = list(
         set(a).intersection(glider_variables))  # find elements in glider_variables relevant to this dataset
     to_plot = sort_by_priority_list(to_plot_unsort, glider_variables)
+    _log.info(f'will plot {to_plot}')
     # for i in range(len(to_plot)):
     #    plotter(ds, to_plot[i], cmap_dict[to_plot[i]], to_plot[i], output_dir)
     image_file = multiplotter(ds, to_plot, output_dir, glider=ds.glider_serial, mission=ds.deployment_id, grid=grid)
@@ -110,6 +112,7 @@ def create_plots(nc, output_dir, grid):
 
 def additional_vars(ds):
     if 'absolute_salinity' not in list(ds):
+        _log.info(f'adding absolute salinity variable')
         ab_sal = gsw.SA_from_SP(ds['salinity'], ds['pressure'].values, ds['longitude'].values, ds['latitude'].values)
         attrs = ab_sal.attrs
         attrs['long_name'] = 'absolute salinity'
@@ -151,6 +154,7 @@ def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
     # Copy some of the cleaning functionality from GliderTools and use it here
     # https://github.com/GliderToolsCommunity/GliderTools/blob/master/glidertools/cleaning.py
     # e.g. remove data more than 2 standard deviations from the mean
+    _log.info(f'preparing {variable} for plot. std dev = {std_devs}, percentile = {percentile}')
 
     arr_in = arr.copy()
     arr_min = np.empty(np.shape(arr), dtype=bool)
@@ -190,7 +194,7 @@ def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
 
 
 # define a basic plotting function for the profiles
-def plotter(dataset, variable, colourmap, title, plots_dir, glider='', mission=''):
+def plotter(dataset, variable, colourmap, title, plots_dir):
     """Create time depth profile coloured by desired variable
 
     Input:
@@ -233,9 +237,9 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
     The intended use of the plotter function is to iterate over a list of variables,
     plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
     if not grid:
-        dataset = dataset.where(dataset.profile_direction<0.)
+        dataset = dataset.where(dataset.profile_direction < 0.)
         end = pandas.to_datetime(dataset.time.values[-1])
-        dataset = dataset.sel(time=slice(end-datetime.timedelta(days=7), end))
+        dataset = dataset.sel(time=slice(end - datetime.timedelta(days=7), end))
     num_variables = len(variables)
     fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3 * num_variables))
     axs = axs.ravel()
@@ -260,13 +264,13 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
         if 'DOWN' in variable:
             vals = ds.values
             vals[vals < 0] = 0
-            vals[vals==9999] = np.nan
+            vals[vals == 9999] = np.nan
             if grid:
                 pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto',
-                                norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
+                                 norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
             else:
                 pcol = ax.scatter(ds.time.values, ds.depth, c=ds.values, cmap=colormap,
-                                 norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
+                                  norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
         else:
             if grid:
                 pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
@@ -282,7 +286,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
             ax.set_ylim(valid_depths.min(), valid_depths.max())
         ax.set_title(label_replace(str(variable)))
         if grid:
-            days =(1, 5, 10, 15, 20, 25)
+            days = (1, 5, 10, 15, 20, 25)
         else:
             days = np.arange(1, 31)
         if i != num_variables - 1:
@@ -307,6 +311,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
         plt.colorbar(mappable=pcol, ax=ax, label=label_replace(ds.units), aspect=13, pad=0.02)
     plt.tight_layout()
     filename = plots_dir / f'SEA{glider}_M{mission}.jpg'
+    _log.info(f'writing figure to {filename}')
     fig.savefig(filename, format='jpeg')
     return filename
 
@@ -330,8 +335,9 @@ def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
     # Upload the file
     s3_client = boto3.client('s3')
     try:
-        s3_client.upload_file(file_name, bucket, object_name)
+        s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={'Metadata': {'Content-Type': ' image/jpeg'}} )
     except ClientError:
+        _log.warning(f'could not upload {file_name} to S3')
         return False
     return True
 
@@ -342,10 +348,13 @@ if __name__ == '__main__':
         outdir = Path(sys.argv[2])
     else:
         outdir = Path('plots')
+    if not outdir.exists():
+        outdir.mkdir(parents=True)
     if 'scatter' in sys.argv:
-        grid=False
+        grid = False
     else:
-        grid=True
+        grid = True
+    _log.info(f'{datetime.datetime.now(): start plotting {netcdf} grid = {grid}}')
     image_file = create_plots(netcdf, outdir, grid)
     if 'upload' in sys.argv:
         path_parts = str(image_file).split('/')

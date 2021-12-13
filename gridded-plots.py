@@ -310,9 +310,9 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
             ax.invert_yaxis()
         plt.colorbar(mappable=pcol, ax=ax, label=label_replace(ds.units), aspect=13, pad=0.02)
     plt.tight_layout()
-    filename = plots_dir / f'SEA{glider}_M{mission}.jpg'
+    filename = plots_dir / f'SEA{glider}_M{mission}.png'
     _log.info(f'writing figure to {filename}')
-    fig.savefig(filename, format='jpeg')
+    fig.savefig(filename, format='png', transparent=True)
     return filename
 
 
@@ -335,7 +335,7 @@ def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
     # Upload the file
     s3_client = boto3.client('s3')
     try:
-        s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={'Metadata': {'Content-Type': ' image/jpeg'}} )
+        s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={'Metadata': {'Content-Type': ' image/png'}} )
     except ClientError:
         _log.warning(f'could not upload {file_name} to S3')
         return False

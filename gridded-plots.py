@@ -269,7 +269,8 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
         if 'DOWN' in variable:
             vals = ds.values
             vals[vals < 0] = 0
-            vals[vals == 9999] = np.nan
+            # Hack to replace bad PAR values that have been averaged in. Bad values are 9999 in og data
+            vals[vals > 500] = np.nan
             if grid:
                 pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto',
                                  norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))

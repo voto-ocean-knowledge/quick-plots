@@ -35,12 +35,14 @@ def main():
     for i, row in to_process.iterrows():
         glider = str(row.glider)
         mission = str(row.mission)
-        nc_file = f'/data/nrt-pyglider/SEA{glider}/M{mission}/gridfiles/sea{glider}_m{mission}_realtime_grid.nc'
+        mission_dir = f'/data/nrt-pyglider/SEA{glider}/M{mission}/gridfiles'
         try:
-            ds = xr.open_dataset(nc_file)
-        except FileNotFoundError:
-            _log.error(f"File {nc_file} not found")
+            nc_file = list(pathlib.Path(mission_dir).glob('*.nc'))[0]
+        except IndexError:
+            _log.error(f"nc file in {mission_dir} not found")
             continue
+        _log.info(f"Processing SEA{glider} M{mission}")
+        ds = xr.open_dataset(nc_file)
         glider_locs_to_json(ds)
     if locs_dict_new != locs_dict_og:
         upload_to_s3(glider_locs_file, 'voto-figures',

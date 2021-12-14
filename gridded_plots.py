@@ -449,8 +449,6 @@ def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"
     locs_dict['055'] = latest_locs
     with open(glider_locs_file, "w") as outfile:
         json.dump(locs_dict, outfile)
-    list(ds.time.values.astype(str))
-    pass
 
 
 if __name__ == '__main__':

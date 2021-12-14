@@ -12,7 +12,8 @@ os.chdir(script_dir)
 from gridded_plots import glider_locs_to_json, upload_to_s3
 
 _log = logging.getLogger(__name__)
-logging.basicConfig(
+logging.basicConfig(filename='/home/pipeline/logs/nrt-plots.log',
+    filemode='a',
     format='%(asctime)s %(levelname)-8s %(message)s',
     level=logging.INFO,
     datefmt='%Y-%m-%d %H:%M:%S')

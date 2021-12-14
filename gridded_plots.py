@@ -408,7 +408,7 @@ def make_map(nc, filename):
     return filename_map
 
 
-def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
+def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod', image=True):
     """Upload a file to an S3 bucket
     Original function by Isabelle Giddy
 
@@ -427,7 +427,11 @@ def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod'):
     # Upload the file
     s3_client = boto3.client('s3')
     try:
-        s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={'Metadata': {'Content-Type': ' image/png'}} )
+        if image:
+            s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={'Metadata': {'Content-Type': ' image/png'}})
+        else:
+            s3_client.upload_file(file_name, bucket, object_name)
+
         _log.info(f'uploading to s3 bucket {bucket} as {object_name}')
     except ClientError:
         _log.warning(f'could not upload {file_name} to S3')

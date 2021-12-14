@@ -41,9 +41,10 @@ def main():
         except FileNotFoundError:
             _log.error(f"File {nc_file} not found")
             continue
-        locs_dict_new = glider_locs_to_json(ds)
+        glider_locs_to_json(ds)
     if locs_dict_new != locs_dict_og:
-        upload_to_s3(locs_dict_new, 'voto-figures', object_name='nrt_glider_locs.json', profile_name='produser')
+        upload_to_s3(glider_locs_file, 'voto-figures',
+                     object_name='nrt_glider_locs.json', profile_name='produser', image=False)
 
 
 if __name__ == '__main__':

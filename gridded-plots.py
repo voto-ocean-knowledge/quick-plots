@@ -3,6 +3,7 @@ Basic plotting functions to operate on gridded netCDF output by pyglider https:/
 Based on work by Elizabeth Siddle and Callum Rollo https://github.com/ESiddle/basestation_plotting
 """
 import sys
+import os
 import logging
 import json
 import gsw
@@ -20,8 +21,10 @@ from collections import defaultdict
 import boto3
 from botocore.exceptions import ClientError
 from matplotlib import style
-from PIL import Image
+import pathlib
 
+script_dir = pathlib.Path(__file__).parent.absolute()
+os.chdir(script_dir)
 style.use('presentation.mplstyle')
 _log = logging.getLogger(__name__)
 logging.basicConfig(

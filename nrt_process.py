@@ -43,7 +43,7 @@ def main():
             continue
         nc_time = nc_file.lstat().st_mtime
         infile_time = 0
-        in_files = list(pathlib.Path(f'/data/l0-pyglider/nrt/SEA0{glider}/0000{mission}/C-Csv/').glob('*'))
+        in_files = list(pathlib.Path(f'/data/data_raw/nrt/SEA0{glider}/0000{mission}/C-Csv/').glob('*'))
         for file in in_files:
             if file.lstat().st_mtime > infile_time:
                 infile_time = file.lstat().st_mtime

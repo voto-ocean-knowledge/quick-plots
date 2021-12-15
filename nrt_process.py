@@ -12,7 +12,7 @@ os.chdir(script_dir)
 from gridded_plots import glider_locs_to_json, upload_to_s3
 
 _log = logging.getLogger(__name__)
-logging.basicConfig(filename='/home/pipeline/logs/nrt-plots.log',
+logging.basicConfig(filename='/data/log/nrt_plots.log',
     filemode='a',
     format='%(asctime)s %(levelname)-8s %(message)s',
     level=logging.INFO,
@@ -35,7 +35,7 @@ def main():
     for i, row in to_process.iterrows():
         glider = str(row.glider)
         mission = str(row.mission)
-        mission_dir = f'/data/nrt-pyglider/SEA{glider}/M{mission}/gridfiles'
+        mission_dir = f'/data/data_raw/nrt/SEA{glider}/M{mission}/gridfiles'
         try:
             nc_file = list(pathlib.Path(mission_dir).glob('*.nc'))[0]
         except IndexError:
@@ -43,7 +43,7 @@ def main():
             continue
         nc_time = nc_file.lstat().st_mtime
         infile_time = 0
-        in_files = list(pathlib.Path(f'/data/raw-nrt/SEA0{glider}/0000{mission}/C-Csv/').glob('*'))
+        in_files = list(pathlib.Path(f'/data/data_raw/nrt/SEA0{glider}/0000{mission}/C-Csv/').glob('*'))
         for file in in_files:
             if file.lstat().st_mtime > infile_time:
                 infile_time = file.lstat().st_mtime

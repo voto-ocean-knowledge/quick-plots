@@ -22,15 +22,11 @@ import boto3
 from botocore.exceptions import ClientError
 from matplotlib import style
 import pathlib
+_log = logging.getLogger(__name__)
 
 script_dir = pathlib.Path(__file__).parent.absolute()
 os.chdir(script_dir)
 style.use('presentation.mplstyle')
-_log = logging.getLogger(__name__)
-logging.basicConfig(
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    level=logging.INFO,
-    datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def sort_by_priority_list(values, priority):

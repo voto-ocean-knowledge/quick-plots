@@ -35,17 +35,16 @@ def main():
     _log.info(f'start plotting {netcdf} grid = {grid}')
     image_file = create_plots(netcdf, outdir, grid)
     map_file = make_map(netcdf, image_file)
-    if 'upload' in sys.argv:
-        path_parts = str(image_file).split('/')
-        if grid:
-            root_dir = 'complete_mission_grid'
-        else:
-            root_dir = 'complete_mission_scatter'
-        s3_filename = f'{root_dir}/{path_parts[-1]}'
-        upload_to_s3(str(image_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
-        path_parts = str(map_file).split('/')
-        s3_filename = f'{root_dir}/{path_parts[-1]}'
-        upload_to_s3(str(map_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
+    path_parts = str(image_file).split('/')
+    if grid:
+        root_dir = 'complete_mission_grid'
+    else:
+        root_dir = 'complete_mission_scatter'
+    s3_filename = f'{root_dir}/{path_parts[-1]}'
+    upload_to_s3(str(image_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
+    path_parts = str(map_file).split('/')
+    s3_filename = f'{root_dir}/{path_parts[-1]}'
+    upload_to_s3(str(map_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
 
 
 if __name__ == '__main__':

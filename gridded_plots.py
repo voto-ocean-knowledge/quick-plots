@@ -449,33 +449,3 @@ def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"
     _log.info(f'Writing {ds.glider_serial} locations to {glider_locs_file}')
     with open(glider_locs_file, "w") as outfile:
         json.dump(locs_dict, outfile)
-
-
-if __name__ == '__main__':
-    netcdf = Path(sys.argv[1])
-    if len(sys.argv) > 2:
-        outdir = Path(sys.argv[2])
-    else:
-        outdir = Path('plots')
-    if not outdir.exists():
-        outdir.mkdir(parents=True)
-    if 'scatter' in sys.argv:
-        grid = False
-    else:
-        grid = True
-    _log.info(f'start plotting {netcdf} grid = {grid}')
-    image_file = create_plots(netcdf, outdir, grid)
-    if 'map' in sys.argv:
-        map_file = make_map(netcdf, image_file)
-    if 'upload' in sys.argv:
-        path_parts = str(image_file).split('/')
-        if grid:
-            root_dir = 'complete_mission_grid'
-        else:
-            root_dir = 'nrt_mission_scatter'
-        s3_filename = f'{root_dir}/{path_parts[-1]}'
-        upload_to_s3(str(image_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
-        if 'map' in sys.argv:
-            path_parts = str(map_file).split('/')
-            s3_filename = f'{root_dir}/{path_parts[-1]}'
-            upload_to_s3(str(map_file), 'voto-figures', object_name=s3_filename, profile_name='produser')

@@ -7,6 +7,7 @@ import os
 import logging
 import json
 import gsw
+import pandas as pd
 import xarray as xr
 from cmocean import cm as cmo
 import matplotlib.pyplot as plt
@@ -449,3 +450,34 @@ def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"
     _log.info(f'Writing {ds.glider_serial} locations to {glider_locs_file}')
     with open(glider_locs_file, "w") as outfile:
         json.dump(locs_dict, outfile)
+
+def count_dives():
+    try:
+        df_dives = pd.read_csv("/data/plots/glider_stats.csv")
+    except FileNotFoundError:
+        df_dives = pd.DataFrame({"datetime": [], "total_dives": []})
+    data_dir = pathlib.Path("/data/data_raw")
+    all_files = list(data_dir.glob("**/*.gli.sub.*"))
+    print(len(all_files))
+    all_dives = []
+    for f in all_files:
+        name = f.name
+        parts = name.split('.')
+        if parts[-1] == 'gz':
+            suffix = parts[-2]
+        else:
+            suffix = parts[-1]
+        try:
+            dive_num = int(suffix)
+            all_dives.append(name)
+        except ValueError:
+            continue
+    all_dives.sort()
+    uniq_dives = np.unique(all_dives)
+    total_dives = len(uniq_dives)
+    now = datetime.datetime.now()
+    df2 = pd.DataFrame({"datetime": [now], "total_dives": [total_dives]})
+    df_now = df_dives.append(df2)
+    df_now['total_dives'] = df_now['total_dives'].astype(int)
+    df_now.to_csv("/data/plots/glider_stats.csv", index=False)
+    return total_dives

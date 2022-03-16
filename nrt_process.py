@@ -4,12 +4,13 @@ import json
 import pathlib
 import pandas as pd
 import xarray as xr
+import datetime
 import logging
 
 script_dir = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(script_dir))
 os.chdir(script_dir)
-from gridded_plots import glider_locs_to_json, upload_to_s3, create_plots, make_map
+from gridded_plots import glider_locs_to_json, upload_to_s3, create_plots, make_map, count_dives
 
 _log = logging.getLogger(__name__)
 logging.basicConfig(filename='/data/log/nrt_plots.log',
@@ -77,6 +78,11 @@ def main():
     if locs_dict_new != locs_dict_og:
         upload_to_s3(glider_locs_file, 'voto-figures',
                      object_name='nrt_glider_locs.json', profile_name='produser', image=False)
+    try:
+        total_dives = count_dives()
+        _log.info(f"total dives: {total_dives}")
+    except:
+        _log.warning("count of total dives failed")
     _log.info('End plot creation')
 
 

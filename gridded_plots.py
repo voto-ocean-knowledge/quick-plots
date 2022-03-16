@@ -458,7 +458,6 @@ def count_dives():
         df_dives = pd.DataFrame({"datetime": [], "total_dives": []})
     data_dir = pathlib.Path("/data/data_raw")
     all_files = list(data_dir.glob("**/*.gli.sub.*"))
-    print(len(all_files))
     all_dives = []
     for f in all_files:
         name = f.name

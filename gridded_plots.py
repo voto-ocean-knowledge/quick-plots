@@ -444,7 +444,7 @@ def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"
             locs_dict = json.load(openfile)
     else:
         locs_dict = {}
-    latest_locs = {'lat': list(ds.latitude.values), 'lon': list(ds.latitude.values),
+    latest_locs = {'lat': list(ds.latitude.values), 'lon': list(ds.longitude.values),
                    'time': list(ds.time.values.astype(str))}
     locs_dict[ds.attrs['glider_serial']] = latest_locs
     _log.info(f'Writing {ds.glider_serial} locations to {glider_locs_file}')

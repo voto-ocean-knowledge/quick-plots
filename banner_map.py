@@ -7,6 +7,7 @@ import pathlib
 import cmocean.cm as cmo
 import logging
 _log = logging.getLogger(__name__)
+plt.rcParams.update({'font.size': 8})
 
 glider_names = {
     '44': 'Martorn',
@@ -55,7 +56,7 @@ def create_map():
 
     cax = ax.inset_axes([0.1, 0.9, 0.3, 0.04], transform=ax.transAxes)
     cbar = fig.colorbar(cs, ax=ax, cax=cax, orientation='horizontal')
-    cbar.set_label('Salinity (psu)', fontsize=4)
+    cbar.set_label('Salinity (psu)', fontsize=8)
 
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
@@ -78,9 +79,9 @@ def create_map():
         ax.text(lon + 0.2, lat + 0.2, label, transform=ccrs.PlateCarree(), color='red', )
 
     ax.text(0.5, 0.05, 'Sea surface salinity from SMHI forecast model at {}'.format(
-        dat.time.valid_time.dt.strftime("%I%p %B %d, %Y").values), transform=ax.transAxes, fontsize=3)
+        dat.time.valid_time.dt.strftime("%I%p %B %d, %Y").values), transform=ax.transAxes, fontsize=6)
     ax.text(0.5, 0.01, 'Glider locations last updated {}'.format(last_update.strftime("%I%p %B %d, %Y")),
-            transform=ax.transAxes, fontsize=3)
+            transform=ax.transAxes, fontsize=6)
     fig_path = '/data/plots/maps/salinity_gliders.png'
     fig.savefig(fig_path, transparent=True, dpi=300, bbox_inches='tight', pad_inches=0)
     return fig_path

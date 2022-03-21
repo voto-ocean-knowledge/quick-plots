@@ -83,7 +83,7 @@ def main():
         _log.info(f"total dives: {total_dives}")
     except:
         _log.warning("count of total dives failed")
-    map_file = create_map
+    map_file = create_map()
     upload_to_s3(map_file, 'voto-figures', object_name='banner-map.png', profile_name='produser', image=True)
     _log.info('End plot creation')
 

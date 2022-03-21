@@ -8,3 +8,6 @@ dependencies:
         - netcdf4
         - cmocean
         - gsw
+        - cfgrib
+        - cartopy
+        - boto3

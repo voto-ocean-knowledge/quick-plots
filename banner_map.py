@@ -31,7 +31,7 @@ def create_map():
     with open(f"/data/plots/glider_locs.json") as json_to_load:
         glider_locs = json.load(json_to_load)
     _log.debug("looking for smhi data files")
-    smhi_data_dir = pathlib.Path("/data/third_party_data/smhi/model_output")
+    smhi_data_dir = pathlib.Path("/data/third_party/smhi/model_output")
     grib_files = list(smhi_data_dir.glob("*"))
     grib_files.sort()
     _log.debug(f"found {len(grib_files)} files in {smhi_data_dir}")

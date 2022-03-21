@@ -56,6 +56,7 @@ def create_map():
 
     cax = ax.inset_axes([0.1, 0.9, 0.3, 0.04], transform=ax.transAxes)
     cbar = fig.colorbar(cs, ax=ax, cax=cax, orientation='horizontal')
+    cbar.ax.tick_params(labelsize=8)
     cbar.set_label('Salinity (psu)', fontsize=8)
 
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
@@ -78,9 +79,9 @@ def create_map():
         ax.scatter(lon, lat, color='w', s=3, transform=ccrs.PlateCarree())
         ax.text(lon + 0.2, lat + 0.2, label, transform=ccrs.PlateCarree(), color='red', )
 
-    ax.text(0.2, 0.05, 'Sea surface salinity last updated {}'.format(
+    ax.text(0.3, 0.05, 'Sea surface salinity last updated {}'.format(
         dat.time.valid_time.dt.strftime("%I%p %B %d, %Y").values), transform=ax.transAxes, fontsize=5)
-    ax.text(0.2, 0.01, 'Glider locations last updated {}'.format(last_update.strftime("%I%p %B %d, %Y")),
+    ax.text(0.3, 0.01, 'Glider locations last updated {}'.format(last_update.strftime("%I%p %B %d, %Y")),
             transform=ax.transAxes, fontsize=5)
     fig_path = '/data/plots/maps/salinity_gliders.png'
     fig.savefig(fig_path, transparent=True, dpi=300, bbox_inches='tight', pad_inches=0)

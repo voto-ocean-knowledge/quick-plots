@@ -68,6 +68,9 @@ def main():
         path_parts = str(map_file).split('/')
         s3_filename = f'{root_dir}/{path_parts[-1]}'
         upload_to_s3(str(map_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
+        # upload to s3 for read by website
+        upload_to_s3(str(image_file), 'voto-figures', object_name=f'{root_dir}/glider_{i}.png', profile_name='produser')
+        upload_to_s3(str(map_file), 'voto-figures', object_name=f'{root_dir}/glider_map_{i}.png', profile_name='produser')
 
     try:
         with open(glider_locs_file, 'r') as openfile:

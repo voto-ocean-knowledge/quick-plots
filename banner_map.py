@@ -1,4 +1,5 @@
 import xarray as xr
+import pandas as pd
 import json
 import datetime
 import matplotlib.pyplot as plt
@@ -29,6 +30,7 @@ def create_map():
     _log.info("starting banner map creation")
     with open(f"/data/plots/glider_locs.json") as json_to_load:
         glider_locs = json.load(json_to_load)
+    to_process = pd.read_csv('/home/pipeline/to_process.csv', dtype=int)
     _log.debug("looking for smhi data files")
     smhi_data_dir = pathlib.Path("/data/third_party/smhi/model_output")
     grib_files = list(smhi_data_dir.glob("*"))
@@ -63,7 +65,7 @@ def create_map():
     plt.margins(0, 0)
 
     last_update = datetime.datetime(1970, 1, 1)
-    to_plot = [55, 63]
+    to_plot = to_process.glider
     for glider_num in to_plot:
         if str(glider_num) not in glider_locs.keys():
             continue
@@ -75,8 +77,8 @@ def create_map():
         if time > last_update:
             last_update = time
         label = f"SEA{str(glider_num).zfill(3)} {name}"
-        ax.scatter(lon, lat, color='w', s=3, transform=ccrs.PlateCarree())
-        ax.text(lon + 0.2, lat + 0.2, label, transform=ccrs.PlateCarree(), color='red', )
+        ax.scatter(lon, lat, color='red', s=3, transform=ccrs.PlateCarree())
+        ax.text(lon + 0.2, lat + 0.2, label, transform=ccrs.PlateCarree(), color='red', fontsize=8)
 
     ax.text(0.3, 0.05, 'Sea surface salinity last updated {}'.format(
         dat.time.valid_time.dt.strftime("%I%p %B %d, %Y").values), transform=ax.transAxes, fontsize=5)

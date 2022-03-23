@@ -7,7 +7,6 @@ import pathlib
 import cmocean.cm as cmo
 import logging
 _log = logging.getLogger(__name__)
-plt.rcParams.update({'font.size': 6})
 
 glider_names = {
     '44': 'Martorn',

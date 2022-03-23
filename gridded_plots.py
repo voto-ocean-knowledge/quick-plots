@@ -372,6 +372,8 @@ def make_map(nc, filename):
     pc = cartopy.crs.PlateCarree()
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(111, projection=coord)
+    attrs = dataset.attrs
+    fig.suptitle(f"SEA{attrs['glider_serial']} {attrs['glider_name']} mission {attrs['deployment_id']}")
     ax.scatter(lons, lats, transform=pc, s=10)
     transform = cartopy.crs.PlateCarree()._as_mpl_transform(ax)
 

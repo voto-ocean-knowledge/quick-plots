@@ -31,6 +31,10 @@ def create_map():
     with open(f"/data/plots/glider_locs.json") as json_to_load:
         glider_locs = json.load(json_to_load)
     to_process = pd.read_csv('/home/pipeline/to_process.csv', dtype=int)
+    df = pd.read_csv('/data/plots/glider_stats.csv', parse_dates=['datetime'], index_col='datetime')
+    total_dives = df.iloc[-1].total_dives
+    idx_yesterday = df.index.get_loc(df.index[-1] - datetime.timedelta(hours=24), method='nearest')
+    dives_yesterday = df.iloc[idx_yesterday].total_dives
     _log.debug("looking for smhi data files")
     smhi_data_dir = pathlib.Path("/data/third_party/smhi/model_output")
     grib_files = list(smhi_data_dir.glob("*"))
@@ -77,13 +81,14 @@ def create_map():
         if time > last_update:
             last_update = time
         label = f"SEA{str(glider_num).zfill(3)} {name}"
-        ax.scatter(lon, lat, color='red', s=3, transform=ccrs.PlateCarree())
-        ax.text(lon + 0.2, lat + 0.2, label, transform=ccrs.PlateCarree(), color='red', fontsize=8)
+        ax.scatter(lon, lat, s=3, transform=ccrs.PlateCarree(), label=label)
 
+    ax.text(0.1, 0.95, f'Total dives completed: {total_dives}\nActive gliders:', transform=ax.transAxes, fontsize=8)
     ax.text(0.3, 0.05, 'Sea surface salinity last updated {}'.format(
-        dat.time.valid_time.dt.strftime("%I%p %B %d, %Y").values), transform=ax.transAxes, fontsize=5)
-    ax.text(0.3, 0.01, 'Glider locations last updated {}'.format(last_update.strftime("%I%p %B %d, %Y")),
+        dat.time.valid_time.dt.strftime("%d %B, %Y").values), transform=ax.transAxes, fontsize=5)
+    ax.text(0.3, 0.01, 'Glider locations last updated {}'.format(last_update.strftime("%I %p %d %B, %Y")),
             transform=ax.transAxes, fontsize=5)
+    ax.legend(loc=(0.1, 0.87), frameon=False, fontsize=6)
     fig_path = '/data/plots/maps/salinity_gliders.png'
     fig.savefig(fig_path, transparent=True, dpi=300, bbox_inches='tight', pad_inches=0)
     return fig_path

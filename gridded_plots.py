@@ -375,16 +375,6 @@ def make_map(nc, filename):
     attrs = dataset.attrs
     fig.suptitle(f"SEA{attrs['glider_serial']} {attrs['glider_name']} mission {attrs['deployment_id']}")
     ax.scatter(lons, lats, transform=pc, s=10)
-    transform = cartopy.crs.PlateCarree()._as_mpl_transform(ax)
-
-    ax.annotate(f'{dataset.glider_name}\n{str(times[-1])[:10]}',
-                xy=(lons[-1], lats[-1]), xytext=(lons[-1]+1.2, lats[-1]+0.5),
-                arrowprops=dict(facecolor='black',
-                                arrowstyle="simple",
-                                alpha=0.5),
-                xycoords=transform,
-                ha='right', va='top')
-
     lon_extend = 3
     lat_extend = 1
     lims = (np.nanmin(lons) - lon_extend, np.nanmax(lons) + lon_extend,

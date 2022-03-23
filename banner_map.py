@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import pathlib
 import cmocean.cm as cmo
+import matplotlib as mpl
 import logging
 _log = logging.getLogger(__name__)
 
@@ -67,7 +68,9 @@ def create_map():
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
     plt.margins(0, 0)
-
+    prop_cycle = plt.rcParams['axes.prop_cycle']
+    colors = prop_cycle.by_key()['color']
+    mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=colors[1:])
     last_update = datetime.datetime(1970, 1, 1)
     to_plot = to_process.glider
     for glider_num in to_plot:
@@ -81,7 +84,8 @@ def create_map():
         if time > last_update:
             last_update = time
         label = f"SEA{str(glider_num).zfill(3)} {name}"
-        ax.scatter(lon, lat, s=5, transform=ccrs.PlateCarree(), edgecolors='white', label=label)
+        ax.scatter(lon, lat, s=8, transform=ccrs.PlateCarree(),  label=label)
+    mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=colors)
 
     ax.text(0.1, 0.95, f'Total dives completed: {total_dives}\nActive gliders:', transform=ax.transAxes, fontsize=8)
     ax.text(0.3, 0.05, 'Sea surface salinity last updated {}'.format(

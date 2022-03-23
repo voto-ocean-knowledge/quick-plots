@@ -59,10 +59,10 @@ def create_map():
     ax.set_title('')
     ax.spines['geo'].set_visible(False)
 
-    cax = ax.inset_axes([0.1, 0.9, 0.3, 0.04], transform=ax.transAxes)
+    cax = ax.inset_axes([0.45, 0.65, 0.1, 0.02], transform=ax.transAxes)
     cbar = fig.colorbar(cs, ax=ax, cax=cax, orientation='horizontal')
-    cbar.ax.tick_params(labelsize=8)
-    cbar.set_label('Salinity (psu)', fontsize=8)
+    cbar.ax.tick_params(labelsize=4)
+    cbar.set_label('Salinity (psu)', fontsize=4)
 
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
@@ -81,7 +81,7 @@ def create_map():
         if time > last_update:
             last_update = time
         label = f"SEA{str(glider_num).zfill(3)} {name}"
-        ax.scatter(lon, lat, s=3, transform=ccrs.PlateCarree(), label=label)
+        ax.scatter(lon, lat, s=5, transform=ccrs.PlateCarree(), edgecolors='white', label=label)
 
     ax.text(0.1, 0.95, f'Total dives completed: {total_dives}\nActive gliders:', transform=ax.transAxes, fontsize=8)
     ax.text(0.3, 0.05, 'Sea surface salinity last updated {}'.format(

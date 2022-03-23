@@ -70,10 +70,9 @@ def create_map():
     plt.margins(0, 0)
     prop_cycle = plt.rcParams['axes.prop_cycle']
     colors = prop_cycle.by_key()['color']
-    mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=colors[1:])
     last_update = datetime.datetime(1970, 1, 1)
     to_plot = to_process.glider
-    for glider_num in to_plot:
+    for i, glider_num in enumerate(to_plot):
         if str(glider_num) not in glider_locs.keys():
             continue
         glider = glider_locs[str(glider_num)]
@@ -84,7 +83,7 @@ def create_map():
         if time > last_update:
             last_update = time
         label = f"SEA{str(glider_num).zfill(3)} {name}"
-        ax.scatter(lon, lat, s=8, transform=ccrs.PlateCarree(),  label=label)
+        ax.scatter(lon, lat, s=8, transform=ccrs.PlateCarree(),  label=label, c=colors[i+1])
     mpl.rcParams['axes.prop_cycle'] = mpl.cycler(color=colors)
 
     ax.text(0.1, 0.95, f'Total dives completed: {total_dives}\nActive gliders:', transform=ax.transAxes, fontsize=8)

@@ -91,7 +91,7 @@ def create_map():
         dat.time.valid_time.dt.strftime("%d %B, %Y").values), transform=ax.transAxes, fontsize=5)
     ax.text(0.3, 0.01, 'Glider locations last updated {}'.format(last_update.strftime("%I %p %d %B, %Y")),
             transform=ax.transAxes, fontsize=5)
-    ax.legend(loc=(0.1, 0.87), frameon=False, fontsize=6)
+    ax.legend(loc=(0.1, 0.8), frameon=False, fontsize=6)
     fig_path = '/data/plots/maps/salinity_gliders.png'
     fig.savefig(fig_path, transparent=True, dpi=300, bbox_inches='tight', pad_inches=0)
     return fig_path

@@ -243,6 +243,8 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
     The intended use of the plotter function is to iterate over a list of variables,
     plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
     if not grid:
+        # Quick fix for if glider has rebooted and 1970s datestamps have appeared mid mission
+        dataset = dataset.sortby("time")
         dataset = dataset.where(dataset.profile_direction < 0.)
         end = pandas.to_datetime(dataset.time.values[-1])
         dataset = dataset.sel(time=slice(end - datetime.timedelta(days=7), end))

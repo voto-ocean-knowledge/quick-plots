@@ -11,6 +11,7 @@ sys.path.append(str(script_dir))
 os.chdir(script_dir)
 from gridded_plots import glider_locs_to_json, upload_to_s3, create_plots, make_map, count_dives
 from banner_map import create_map
+from pilot_plots import battery_plots
 
 _log = logging.getLogger(__name__)
 logging.basicConfig(filename='/data/log/nrt_plots.log',
@@ -71,6 +72,12 @@ def main():
         # upload to s3 for read by website
         upload_to_s3(str(image_file), 'voto-figures', object_name=f'{root_dir}/glider_{i}.png', profile_name='produser')
         upload_to_s3(str(map_file), 'voto-figures', object_name=f'{root_dir}/glider_map_{i}.png', profile_name='produser')
+        _log.info("start pilot plots")
+        combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.nc"))
+        if combi_nav_files:
+            battery_plots(combi_nav_files[0], outdir)
+        else:
+            _log.info("No combi nav file found for piloting plots")
 
     try:
         with open(glider_locs_file, 'r') as openfile:

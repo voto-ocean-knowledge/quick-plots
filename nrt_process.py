@@ -76,6 +76,7 @@ def main():
         combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.nc"))
         if combi_nav_files:
             battery_plots(combi_nav_files[0], outdir)
+            _log.info("Finished pilot plots")
         else:
             _log.info("No combi nav file found for piloting plots")
 

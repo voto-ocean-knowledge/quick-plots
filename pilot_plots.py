@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import xarray as xr
 import datetime
 from sklearn import datasets, linear_model
+import logging
+_log = logging.getLogger(__name__)
 
 
 def battery_plots(combined_nav_file, out_dir):
@@ -16,14 +18,17 @@ def battery_plots(combined_nav_file, out_dir):
 
     df_min = df.rolling(window=datetime.timedelta(hours=6)).min()
     df_mean = df.rolling(window=datetime.timedelta(hours=6)).mean()
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.plot(df_mean.index, df_mean.Voltage, label="6 hour mean")
     ax.plot(df_min.index, df_min.Voltage, label="6 hour min")
     ax.legend()
     ax.grid()
     ax.set(ylabel="Voltage (v)", title=title)
     plt.xticks(rotation=45)
-    fig.savefig(f"{out_dir}/battery")
+    plt.tight_layout()
+    filename = f"{out_dir}/battery"
+    _log.info(f'writing figure to {filename}')
+    fig.savefig(filename, format='png', transparent=True)
 
     # Prediction plot
     df_3day = df[df.index > df.index.max() - datetime.timedelta(days=3)]
@@ -34,7 +39,7 @@ def battery_plots(combined_nav_file, out_dir):
     y_forward = regr.predict(datetime_pred.values.astype(float).reshape(-1, 1))
     end = datetime_pred[y_forward[:, 0] > 23][-1]
 
-    fig, ax = plt.subplots(figsize=(6, 4))
+    fig, ax = plt.subplots(figsize=(12, 8))
     ax.scatter(df_3day.index, df_3day.Voltage, label="Voltage last 3 days")
     ax.plot(datetime_pred, y_forward, label="Linear prediction")
     ax.set(xlim=(df_3day.index[0], end), ylim=(22.9, df_3day.Voltage.max() + 0.1))
@@ -42,5 +47,8 @@ def battery_plots(combined_nav_file, out_dir):
     ax.set(ylabel="Voltage (v)", title=title)
     plt.xticks(rotation=45)
     ax.legend()
-    fig.savefig(f"{out_dir}/battery_prediction")
+    plt.tight_layout()
+    filename = f"{out_dir}/battery_prediction"
+    _log.info(f'writing figure to {filename}')
+    fig.savefig(filename, format='png', transparent=True)
 

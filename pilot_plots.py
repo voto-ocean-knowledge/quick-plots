@@ -41,7 +41,7 @@ def battery_plots(combined_nav_file, out_dir):
     end = datetime_pred[y_forward[:, 0] > 23][-1]
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax.scatter(df_3day.index, df_3day.Voltage, label="Voltage last 3 days")
+    ax.scatter(df_3day.index, df_3day.Voltage, label="Voltage last 3 days", s=3)
     ax.plot(datetime_pred, y_forward, label="Linear prediction")
     ax.set(xlim=(df_3day.index[0], end), ylim=(22.9, df_3day.Voltage.max() + 0.1))
     v_per_ns = regr.coef_[0][0]
@@ -49,13 +49,13 @@ def battery_plots(combined_nav_file, out_dir):
     loss = np.round(np.abs(v_per_day), 2)
     recover = datetime_pred[np.argmin(np.abs(24 - y_forward))]
     recov_date = str(recover)[:10]
-    ax.text(0.05, 0.1, f"{loss} V/day\nrecover {recov_date}", transform=ax.transAxes)
+    ax.text(0.05, 0.06, f"{loss} V/day\nrecover {recov_date}", transform=ax.transAxes)
     ax.axhline(24, color="red")
     ax.axvline(recover, color="red")
     ax.grid()
     ax.set(ylabel="Voltage (v)", title=title)
     plt.xticks(rotation=45)
-    ax.legend()
+    ax.legend(loc=1)
     plt.tight_layout()
     filename = f"{out_dir}/battery_prediction.png"
     _log.info(f'writing figure to {filename}')

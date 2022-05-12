@@ -26,7 +26,7 @@ def battery_plots(combined_nav_file, out_dir):
     ax.set(ylabel="Voltage (v)", title=title)
     plt.xticks(rotation=45)
     plt.tight_layout()
-    filename = f"{out_dir}/battery"
+    filename = f"{out_dir}/battery.png"
     _log.info(f'writing figure to {filename}')
     fig.savefig(filename, format='png', transparent=True)
 
@@ -48,7 +48,7 @@ def battery_plots(combined_nav_file, out_dir):
     plt.xticks(rotation=45)
     ax.legend()
     plt.tight_layout()
-    filename = f"{out_dir}/battery_prediction"
+    filename = f"{out_dir}/battery_prediction.png"
     _log.info(f'writing figure to {filename}')
     fig.savefig(filename, format='png', transparent=True)
 

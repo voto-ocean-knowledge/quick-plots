@@ -9,14 +9,14 @@ os.chdir(script_dir)
 from gridded_plots import upload_to_s3, create_plots, make_map
 
 _log = logging.getLogger(__name__)
-logging.basicConfig(filename='/data/log/complete_mission/plots.log',
-                    filemode='a',
-                    format='%(asctime)s %(levelname)-8s %(message)s',
-                    level=logging.INFO,
-                    datefmt='%Y-%m-%d %H:%M:%S')
 
 
 def complete_plots(glider, mission):
+    logging.basicConfig(filename='/data/log/complete_mission/plots.log',
+                        filemode='a',
+                        format='%(asctime)s %(levelname)-8s %(message)s',
+                        level=logging.INFO,
+                        datefmt='%Y-%m-%d %H:%M:%S')
     mission_dir = f'/data/data_l0_pyglider/complete_mission/SEA{glider}/M{mission}/gridfiles/'
     try:
         netcdf = list(pathlib.Path(mission_dir).glob('*.nc'))[0]

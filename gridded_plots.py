@@ -394,7 +394,7 @@ def make_map(nc, filename):
 
     fn_root, fn_ext = str(filename).split('.')
     filename_map = f"{fn_root}_map.{fn_ext}"
-    _log.info(f"writing mapt to {filename_map}")
+    _log.info(f"writing map to {filename_map}")
     fig.savefig(filename_map, format='png', transparent=True)
     return filename_map
 

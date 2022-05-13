@@ -42,7 +42,7 @@ def battery_plots(combined_nav_file, out_dir):
 
     fig, ax = plt.subplots(figsize=(12, 8))
     if (df_3day.Voltage > 28).any():
-        _log.info("voltage too low to make prediction plot")
+        _log.info("voltage too high to make prediction plot")
         ax.text(0.3, 0.5, "Voltage too high \nfor battery prediction", fontsize="24")
         ax.axis("off")
     else:

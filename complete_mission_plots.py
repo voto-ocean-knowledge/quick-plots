@@ -16,9 +16,7 @@ logging.basicConfig(filename='/data/log/complete_mission/plots.log',
                     datefmt='%Y-%m-%d %H:%M:%S')
 
 
-def main():
-    glider = sys.argv[1]
-    mission = sys.argv[2]
+def complete_plots(glider, mission):
     mission_dir = f'/data/data_l0_pyglider/complete_mission/SEA{glider}/M{mission}/gridfiles/'
     try:
         netcdf = list(pathlib.Path(mission_dir).glob('*.nc'))[0]
@@ -48,4 +46,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    complete_plots(sys.argv[1], sys.argv[2])

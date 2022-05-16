@@ -65,4 +65,7 @@ def battery_plots(combined_nav_file, out_dir):
     filename = f"{out_dir}/battery_prediction.png"
     _log.info(f'writing figure to {filename}')
     fig.savefig(filename, format='png', transparent=True)
+    dline = f"{datetime.datetime.now()},{glider},{mission},{v_per_day},{end}\n"
+    with open("/data/plots/nrt/battery_prediction.csv", "a") as file:
+        file.write(dline)
 

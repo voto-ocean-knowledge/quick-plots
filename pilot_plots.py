@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import xarray as xr
 import datetime
-from sklearn import datasets, linear_model
+from sklearn import linear_model
 import logging
 _log = logging.getLogger(__name__)
 
@@ -39,6 +39,8 @@ def battery_plots(combined_nav_file, out_dir):
     datetime_pred = pd.date_range(df_3day.index[0], df_3day.index[0] + datetime.timedelta(days=60), 60*24)
     y_forward = regr.predict(datetime_pred.values.astype(float).reshape(-1, 1))
     end = datetime_pred[y_forward[:, 0] > 23][-1]
+    v_per_ns = regr.coef_[0][0]
+    v_per_day = v_per_ns * 24 * 60 * 60 * 1e9
 
     fig, ax = plt.subplots(figsize=(12, 8))
     if (df_3day.Voltage > 28).any():
@@ -49,8 +51,6 @@ def battery_plots(combined_nav_file, out_dir):
         ax.scatter(df_3day.index, df_3day.Voltage, label="Voltage last 3 days", s=3)
         ax.plot(datetime_pred, y_forward, label="Linear prediction")
         ax.set(xlim=(df_3day.index[0], end), ylim=(22.9, df_3day.Voltage.max() + 0.1))
-        v_per_ns = regr.coef_[0][0]
-        v_per_day = v_per_ns * 24 * 60 * 60 * 1e9
         loss = np.round(np.abs(v_per_day), 2)
         recover = datetime_pred[np.argmin(np.abs(24 - y_forward))]
         recov_date = str(recover)[:10]
@@ -68,4 +68,3 @@ def battery_plots(combined_nav_file, out_dir):
     dline = f"{datetime.datetime.now()},{glider},{mission},{v_per_day},{end}\n"
     with open("/data/plots/nrt/battery_prediction.csv", "a") as file:
         file.write(dline)
-

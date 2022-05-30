@@ -34,7 +34,7 @@ def battery_plots(combined_nav_file, out_dir):
     # Prediction plot
     df_3day = df[df.index > df.index.max() - datetime.timedelta(days=3)]
     regr = linear_model.LinearRegression()
-    regr.fit(df.index.values.reshape(-1, 1), df['Voltage'].values.reshape(-1, 1))
+    regr.fit(df_3day.index.values.reshape(-1, 1), df_3day['Voltage'].values.reshape(-1, 1))
     # Create time array of one point every hour for 60 days starting three days ago
     datetime_pred = pd.date_range(df_3day.index[0], df_3day.index[0] + datetime.timedelta(days=60), 60*24)
     y_forward = regr.predict(datetime_pred.values.astype(float).reshape(-1, 1))

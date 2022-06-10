@@ -6,7 +6,7 @@ import logging
 script_dir = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(script_dir))
 os.chdir(script_dir)
-from gridded_plots import upload_to_s3, create_plots, make_map
+from gridded_plots import create_plots, make_map
 
 _log = logging.getLogger(__name__)
 
@@ -32,17 +32,7 @@ def complete_plots(glider, mission):
         grid = True
     _log.info(f'start plotting {netcdf} grid = {grid}')
     image_file = create_plots(netcdf, outdir, grid)
-    map_file = make_map(netcdf, image_file)
-    path_parts = str(image_file).split('/')
-    if grid:
-        root_dir = 'complete_mission_grid'
-    else:
-        root_dir = 'complete_mission_scatter'
-    s3_filename = f'{root_dir}/{path_parts[-1]}'
-    upload_to_s3(str(image_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
-    path_parts = str(map_file).split('/')
-    s3_filename = f'{root_dir}/{path_parts[-1]}'
-    upload_to_s3(str(map_file), 'voto-figures', object_name=s3_filename, profile_name='produser')
+    make_map(netcdf, image_file)
 
 
 if __name__ == '__main__':

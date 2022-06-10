@@ -2,12 +2,10 @@
 Basic plotting functions to operate on gridded netCDF output by pyglider https://github.com/c-proof/pyglider
 Based on work by Elizabeth Siddle and Callum Rollo https://github.com/ESiddle/basestation_plotting
 """
-import sys
 import os
 import logging
 import json
 import gsw
-import pandas as pd
 import xarray as xr
 from cmocean import cm as cmo
 import matplotlib.pyplot as plt
@@ -19,8 +17,6 @@ from pathlib import Path
 import pandas
 import datetime
 from collections import defaultdict
-import boto3
-from botocore.exceptions import ClientError
 from matplotlib import style
 import pathlib
 _log = logging.getLogger(__name__)
@@ -399,37 +395,6 @@ def make_map(nc, filename):
     return filename_map
 
 
-def upload_to_s3(file_name, bucket, object_name=None, profile_name='voto:prod', image=True):
-    """Upload a file to an S3 bucket
-    Original function by Isabelle Giddy
-
-    :param file_name: File to upload
-    :param bucket: Bucket to upload to
-    :param object_name: S3 object name. If not specified then file_name is used
-    :param profile_name: name of AWS profile to use for credentials
-    :return: True if file was uploaded, else False
-    """
-    boto3.setup_default_session(profile_name=profile_name)
-
-    # If S3 object_name was not specified, use file_name
-    if object_name is None:
-        object_name = file_name
-
-    # Upload the file
-    s3_client = boto3.client('s3')
-    try:
-        if image:
-            s3_client.upload_file(file_name, bucket, object_name, ExtraArgs={'Metadata': {'Content-Type': ' image/png'}})
-        else:
-            s3_client.upload_file(file_name, bucket, object_name)
-
-        _log.info(f'uploading to s3 bucket {bucket} as {object_name}')
-    except ClientError:
-        _log.warning(f'could not upload {file_name} to S3')
-        return False
-    return True
-
-
 def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"):
     profs = ds_grid.time.values[-10::2]
     ds = ds_grid.sel(time=profs)
@@ -445,32 +410,3 @@ def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"
     with open(glider_locs_file, "w") as outfile:
         json.dump(locs_dict, outfile)
 
-def count_dives():
-    try:
-        df_dives = pd.read_csv("/data/plots/glider_stats.csv")
-    except FileNotFoundError:
-        df_dives = pd.DataFrame({"datetime": [], "total_dives": []})
-    data_dir = pathlib.Path("/data/data_raw")
-    all_files = list(data_dir.glob("**/*.gli.sub.*"))
-    all_dives = []
-    for f in all_files:
-        name = f.name
-        parts = name.split('.')
-        if parts[-1] == 'gz':
-            suffix = parts[-2]
-        else:
-            suffix = parts[-1]
-        try:
-            dive_num = int(suffix)
-            all_dives.append(name)
-        except ValueError:
-            continue
-    all_dives.sort()
-    uniq_dives = np.unique(all_dives)
-    total_dives = len(uniq_dives)
-    now = datetime.datetime.now()
-    df2 = pd.DataFrame({"datetime": [now], "total_dives": [total_dives]})
-    df_now = df_dives.append(df2)
-    df_now['total_dives'] = df_now['total_dives'].astype(int)
-    df_now.to_csv("/data/plots/glider_stats.csv", index=False)
-    return total_dives

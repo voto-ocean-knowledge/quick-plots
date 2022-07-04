@@ -19,6 +19,7 @@ import datetime
 from collections import defaultdict
 from matplotlib import style
 import pathlib
+
 _log = logging.getLogger(__name__)
 
 script_dir = pathlib.Path(__file__).parent.absolute()
@@ -275,20 +276,20 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
                                  norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
             else:
                 time = ds.time.values
-                depth = ds.depth.values
+                depth = ds.depth.values[::-1]
                 depth_grid = np.tile(depth, (len(time), 1)).T
                 time_grid = np.tile(time, (len(depth), 1))
-                pcol = ax.scatter(time_grid, depth_grid, c=vals, cmap=colormap,
+                pcol = ax.scatter(time_grid, depth_grid, c=vals[::-1, :], cmap=colormap,
                                   norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
         else:
             if grid:
                 pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
             else:
                 time = ds.time.values
-                depth = ds.depth.values
+                depth = ds.depth.values[::-1]
                 depth_grid = np.tile(depth, (len(time), 1)).T
                 time_grid = np.tile(time, (len(depth), 1))
-                pcol = ax.scatter(time_grid, depth_grid, c=ds.values, cmap=colormap)
+                pcol = ax.scatter(time_grid, depth_grid, c=ds.values[::-1, :], cmap=colormap)
 
         var_sum = np.nansum(dataset[variable].data, 1)
         valid_depths = dataset[variable].depth.data[var_sum != 0.0]
@@ -366,7 +367,7 @@ def make_map(nc, filename):
     lons = dataset.longitude.values
     times = dataset.time.values
     coord = cartopy.crs.AzimuthalEquidistant(central_longitude=np.mean(lons),
-                                      central_latitude=np.mean(lats))
+                                             central_latitude=np.mean(lats))
     pc = cartopy.crs.PlateCarree()
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(111, projection=coord)
@@ -380,7 +381,7 @@ def make_map(nc, filename):
     ax.set_extent(lims, crs=pc)
 
     feature = cartopy.feature.NaturalEarthFeature(name='land', category='physical',
-                                           scale='10m', edgecolor='black', facecolor='lightgreen')
+                                                  scale='10m', edgecolor='black', facecolor='lightgreen')
     ax.add_feature(feature)
     gl = ax.gridlines(draw_labels=True,
                       linewidth=2, color='gray', alpha=0.5, linestyle='--')

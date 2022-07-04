@@ -10,4 +10,4 @@ dependencies:
         - gsw
         - cfgrib
         - cartopy
-        - boto3
+        - pandas

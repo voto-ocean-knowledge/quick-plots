@@ -4,7 +4,6 @@ Based on work by Elizabeth Siddle and Callum Rollo https://github.com/ESiddle/ba
 """
 import os
 import logging
-import json
 import gsw
 import xarray as xr
 from cmocean import cm as cmo
@@ -106,8 +105,6 @@ def create_plots(nc, output_dir, grid):
         set(a).intersection(glider_variables))  # find elements in glider_variables relevant to this dataset
     to_plot = sort_by_priority_list(to_plot_unsort, glider_variables)
     _log.info(f'will plot {to_plot}')
-    # for i in range(len(to_plot)):
-    #    plotter(ds, to_plot[i], cmap_dict[to_plot[i]], to_plot[i], output_dir)
     image_file = multiplotter(ds, to_plot, output_dir, glider=ds.glider_serial, mission=ds.deployment_id, grid=grid)
     # image_file = tempsal_scatter(ds, output_dir)
     return image_file
@@ -194,38 +191,6 @@ def prepare_for_plotting(dataset, variable, std_devs=2, percentile=0.5):
     dataset[variable].data = arr_in
 
     return dataset
-
-
-# define a basic plotting function for the profiles
-def plotter(dataset, variable, colourmap, title, plots_dir):
-    """Create time depth profile coloured by desired variable
-
-    Input:
-    dataset: the name of the xarray dataset
-    variable: the name of the data variable to be plotted
-    colourmap: name of the colourmap to be used in profile
-    title: variable name included as title to easily identify plot
-
-    The intended use of the plotter function is to iterate over a list of variables,
-    plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
-
-    # find max depth the given variable was measures to
-    var_sum = np.nansum(dataset[variable].data, 1)
-    valid_depths = dataset[variable].depth.data[var_sum != 0.0]
-
-    fig, ax = plt.subplots()
-    if 'cdom' in variable:
-        std_devs = 4
-    else:
-        std_devs = 2
-    dataset = prepare_for_plotting(dataset, variable, std_devs=std_devs)
-    dataset[variable].T.plot(yincrease=False, y="depth", x="time", cmap=colourmap)
-    ax.set_ylim(valid_depths.max(), valid_depths.min())
-    ax.set_title(str(title))
-    plt.tight_layout()
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%y'))  # sets x tick format
-    fig.savefig(plots_dir / f'{variable}.jpg', format='jpeg')
-    return fig, ax
 
 
 def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True):
@@ -365,7 +330,6 @@ def make_map(nc, filename):
     dataset = xr.open_dataset(nc)
     lats = dataset.latitude.values
     lons = dataset.longitude.values
-    times = dataset.time.values
     coord = cartopy.crs.AzimuthalEquidistant(central_longitude=np.mean(lons),
                                              central_latitude=np.mean(lats))
     pc = cartopy.crs.PlateCarree()
@@ -394,20 +358,3 @@ def make_map(nc, filename):
     _log.info(f"writing map to {filename_map}")
     fig.savefig(filename_map, format='png', transparent=True)
     return filename_map
-
-
-def glider_locs_to_json(ds_grid, glider_locs_file="/data/plots/glider_locs.json"):
-    profs = ds_grid.time.values[-10::2]
-    ds = ds_grid.sel(time=profs)
-    if Path(glider_locs_file).exists():
-        with open(glider_locs_file, 'r') as openfile:
-            locs_dict = json.load(openfile)
-    else:
-        locs_dict = {}
-    latest_locs = {'lat': list(ds.latitude.values), 'lon': list(ds.longitude.values),
-                   'time': list(ds.time.values.astype(str))}
-    locs_dict[ds.attrs['glider_serial']] = latest_locs
-    _log.info(f'Writing {ds.glider_serial} locations to {glider_locs_file}')
-    with open(glider_locs_file, "w") as outfile:
-        json.dump(locs_dict, outfile)
-

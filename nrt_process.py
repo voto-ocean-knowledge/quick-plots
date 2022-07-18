@@ -8,7 +8,7 @@ import logging
 script_dir = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(script_dir))
 os.chdir(script_dir)
-from gridded_plots import glider_locs_to_json, create_plots, make_map
+from gridded_plots import create_plots, make_map
 from pilot_plots import battery_plots
 
 _log = logging.getLogger(__name__)
@@ -45,8 +45,6 @@ def main():
             _log.info(f"SEA{glider} M{mission} unchanged. No plotting")
             continue
         _log.info(f"Processing SEA{glider} M{mission}")
-        ds = xr.open_dataset(nc_file)
-        glider_locs_to_json(ds)
         outdir = pathlib.Path(f'/data/plots/nrt/SEA{glider}/M{mission}/')
         if not outdir.exists():
             outdir.mkdir(parents=True)

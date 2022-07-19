@@ -4,6 +4,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import datetime
 import pandas as pd
+import xarray as xr
 from gridded_plots import additional_vars, glider_variables, sort_by_priority_list, cmap_dict, label_replace
 
 sys.path.append("/home/pipeline/GliderTools")
@@ -11,7 +12,8 @@ sys.path.append("/home/pipeline/GliderTools")
 import glidertools as gt
 
 
-def public_plots(ds, plots_dir):
+def public_plots(nc, plots_dir):
+    ds = xr.open_dataset(nc)
     # Clean out any bad times
     end = pd.to_datetime(ds.time.max().values)
     ds = ds.sel(time=slice(end - datetime.timedelta(days=60), end))

@@ -39,6 +39,7 @@ def battery_plots(combined_nav_file, out_dir):
     datetime_pred = pd.date_range(df_3day.index[0], df_3day.index[0] + datetime.timedelta(days=60), 60*24)
     y_forward = regr.predict(datetime_pred.values.astype(float).reshape(-1, 1))
     end = datetime_pred[y_forward[:, 0] > 23][-1]
+    recover = datetime_pred[y_forward[:, 0] > 24][-1]
     v_per_ns = regr.coef_[0][0]
     v_per_day = v_per_ns * 24 * 60 * 60 * 1e9
 

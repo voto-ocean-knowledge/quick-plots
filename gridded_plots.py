@@ -10,7 +10,6 @@ from cmocean import cm as cmo
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib
-import cartopy
 import numpy as np
 from pathlib import Path
 import pandas
@@ -280,7 +279,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
     return filename
 
 
-def scale_bar(ax, length=None, location=(0.5, 0.05), linewidth=3, coord=cartopy.crs.PlateCarree()):
+def scale_bar(ax, length=None, location=(0.5, 0.05), linewidth=3):
     """
     ax is the axes to draw the scalebar on.
     length is the length of the scalebar in km.
@@ -288,6 +287,8 @@ def scale_bar(ax, length=None, location=(0.5, 0.05), linewidth=3, coord=cartopy.
     (ie. 0.5 is the middle of the plot)
     linewidth is the thickness of the scalebar.
     """
+    import cartopy
+    coord=cartopy.crs.PlateCarree()
     # Get the limits of the axis in lat long
     llx0, llx1, lly0, lly1 = ax.get_extent(coord)
     # Make tmc horizontally centred on the middle of the map,
@@ -327,6 +328,7 @@ def scale_bar(ax, length=None, location=(0.5, 0.05), linewidth=3, coord=cartopy.
 
 
 def make_map(nc, filename):
+    import cartopy
     dataset = xr.open_dataset(nc)
     lats = dataset.latitude.values
     lons = dataset.longitude.values

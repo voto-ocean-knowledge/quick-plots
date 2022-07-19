@@ -5,6 +5,8 @@ import pandas as pd
 import xarray as xr
 import logging
 
+from glidertools_plots import public_plots
+
 script_dir = pathlib.Path(__file__).parent.absolute()
 sys.path.append(str(script_dir))
 os.chdir(script_dir)
@@ -51,6 +53,10 @@ def main():
         _log.info(f'start plotting {nc_file} ')
         image_file = create_plots(nc_file, outdir, False)
         make_map(nc_file, image_file)
+        _log.info("start glidertools plots")
+        ts_dir = f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/timeseries/'
+        ts_file = list(pathlib.Path(ts_dir).glob('*.nc'))[0]
+        public_plots(ts_file, outdir)
         _log.info("start pilot plots")
         combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.nc"))
         if combi_nav_files:

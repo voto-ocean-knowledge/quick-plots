@@ -44,8 +44,16 @@ def public_plots(nc, plots_dir):
         variable = variables[i]
         # GliderTools cleaning step. Ideally this would be a wrapper, but wrapper doesn't do both IQR and std dev atm
         var = ds[variable]
-        var_iqr = gt.cleaning.outlier_bounds_iqr(var, multiplier=1.5)
-        var_std = gt.cleaning.outlier_bounds_std(var, multiplier=1.5)
+        std_devs = 4
+        iqr = 2
+        if 'chlor' in variable or 'DOWN' in variable:
+            std_devs = 10000
+            iqr = 2
+        elif "sal" or "den" in variable:
+            std_devs = 50
+            iqr = 50
+        var_iqr = gt.cleaning.outlier_bounds_iqr(var, multiplier=iqr)
+        var_std = gt.cleaning.outlier_bounds_std(var, multiplier=std_devs)
         mask = np.isnan(var_iqr) + np.isnan(var_std)
         var_qc = var.copy()
         var_qc.values[mask] = np.nan

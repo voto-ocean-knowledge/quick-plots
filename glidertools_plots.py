@@ -37,6 +37,9 @@ def public_plots(nc, plots_dir):
     num_variables = len(variables)
     fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3.5 * num_variables), sharex="col")
     axs = axs.ravel()
+    # Often get a small percentage of unphysically large depths. Workaround
+    valid_depths = ds.depth[ds.depth < 1000]
+    max_depth = np.nanpercentile(valid_depths, 99) * 1.2
     for i, ax in enumerate(axs):
         variable = variables[i]
         # GliderTools cleaning step. Ideally this would be a wrapper, but wrapper doesn't do both IQR and std dev atm
@@ -48,8 +51,7 @@ def public_plots(nc, plots_dir):
         var_qc.values[mask] = np.nan
         colormap = cmap_dict[variable]
         ax, im = gt.plot(ds.profile_mean_time, ds.depth, var_qc, cmap=colormap, robust=True, ax=ax)
-        valid_depths = ds.depth.values[~np.isnan(ds[variable])]
-        ax.set_ylim(valid_depths.max(), 0)
+        ax.set_ylim(max_depth, 0)
         ax.set_title(label_replace(str(variable)))
         extent = ds.time.max() - ds.time.min()
         total_days = int(extent.values) / (24 * 60 * 60 * 1e9)

@@ -1,8 +1,6 @@
 import sys
 import os
 import pathlib
-import pandas as pd
-import xarray as xr
 import logging
 
 from glidertools_plots import public_plots
@@ -19,18 +17,25 @@ logging.basicConfig(filename='/data/log/nrt_plots.log',
                     format='%(asctime)s %(levelname)-8s %(message)s',
                     level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
+glider_no_proc = [57]
 
 
 def main():
-    _log.info('Starting plot creation')
-    try:
-        to_process = pd.read_csv('/home/pipeline/to_process.csv', dtype=int)
-    except FileNotFoundError:
-        _log.error("to_process.csv not found")
-        return
-    for i, row in to_process.iterrows():
-        glider = str(row.glider)
-        mission = str(row.mission)
+    _log.info("Start nrt processing")
+    all_glider_paths = pathlib.Path(f"/data/data_raw/nrt").glob("SEA*")
+    for glider_path in all_glider_paths:
+        glider = str(glider_path)[-3:].lstrip("0")
+        if int(glider) in glider_no_proc:
+            _log.info(f"SEA{glider} is not to be processed. Skipping")
+            continue
+        _log.info(f"Checking SEA{glider}")
+        mission_paths = list(glider_path.glob("00*"))
+        if not mission_paths:
+            _log.warning(f"No missions found for SEA{glider}. Skipping")
+            continue
+        mission_paths.sort()
+        mission = str(mission_paths[-1])[-3:].lstrip("0")
+        _log.info(f"Checking SEA{glider} M{mission}")
         mission_dir = f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/gridfiles/'
         try:
             nc_file = list(pathlib.Path(mission_dir).glob('*.nc'))[0]

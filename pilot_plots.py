@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
+import polars as pl
 import matplotlib.pyplot as plt
-import xarray as xr
 import datetime
 from sklearn import linear_model
 import logging
@@ -13,8 +13,10 @@ def battery_plots(combined_nav_file, out_dir):
     glider = parts[-4][3:]
     mission = parts[-3][1:]
     title = f"SEA{glider.zfill(3)} M{mission}"
-    ds = xr.open_dataset(combined_nav_file)
-    df = ds.Voltage.to_dataframe()
+    df_polar = pl.read_parquet(combined_nav_file)
+    df = pd.read_parquet(combined_nav_file)
+    df.index = df_polar.select("time").to_numpy()[:, 0]
+    df = df[["Voltage"]]
     df = df[df.index > datetime.datetime(1980, 1, 1)]
 
     df_min = df.rolling(window=datetime.timedelta(hours=6)).min()

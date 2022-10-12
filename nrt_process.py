@@ -63,7 +63,7 @@ def main():
         ts_file = list(pathlib.Path(ts_dir).glob('*.nc'))[0]
         public_plots(ts_file, outdir)
         _log.info("start pilot plots")
-        combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.nc"))
+        combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.parquet"))
         if combi_nav_files:
             battery_plots(combi_nav_files[0], outdir)
             _log.info("Finished pilot plots")

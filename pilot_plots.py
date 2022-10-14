@@ -40,26 +40,42 @@ def battery_plots(combined_nav_file, out_dir):
     # Create time array of one point every hour for 60 days starting three days ago
     datetime_pred = pd.date_range(df_3day.index[0], df_3day.index[0] + datetime.timedelta(days=60), 60*24)
     y_forward = regr.predict(datetime_pred.values.astype(float).reshape(-1, 1))
-    end = datetime_pred[y_forward[:, 0] > 23][-1]
+    v_per_ns = regr.coef_[0][0]
+    v_per_day_3 = v_per_ns * 24 * 60 * 60 * 1e9
+
+    df_5day = df[df.index > df.index.max() - datetime.timedelta(days=5)]
+    regr = linear_model.LinearRegression()
+    regr.fit(df_5day.index.values.reshape(-1, 1), df_5day['Voltage'].values.reshape(-1, 1))
+    # Create time array of one point every hour for 60 days starting three days ago
+    datetime_pred_5 = pd.date_range(df_5day.index[0], df_5day.index[0] + datetime.timedelta(days=60), 60*24)
+    y_forward_5 = regr.predict(datetime_pred_5.values.astype(float).reshape(-1, 1))
+    end = datetime_pred_5[y_forward_5[:, 0] > 23][-1]
+
     recover = datetime_pred[y_forward[:, 0] > 24][-1]
     v_per_ns = regr.coef_[0][0]
     v_per_day = v_per_ns * 24 * 60 * 60 * 1e9
 
     fig, ax = plt.subplots(figsize=(12, 8))
-    if (df_3day.Voltage > 28).any():
+    if df_mean.Voltage.min() > 28:
         _log.info("voltage too high to make prediction plot")
         ax.text(0.3, 0.5, "Voltage too high \nfor battery prediction", fontsize="24")
         ax.axis("off")
     else:
-        ax.scatter(df_3day.index, df_3day.Voltage, label="Voltage last 3 days", s=3)
-        ax.plot(datetime_pred, y_forward, label="Linear prediction")
-        ax.set(xlim=(df_3day.index[0], end), ylim=(22.9, df_3day.Voltage.max() + 0.1))
+        ax.scatter(df_5day.index, df_5day.Voltage, label="Voltage last 5 days", s=3)
+        ax.plot(datetime_pred, y_forward, label="last 3 days prediction")
+        ax.set(xlim=(df_5day.index[0], end), ylim=(22.9, df_5day.Voltage.max() + 0.1))
         loss = np.round(np.abs(v_per_day), 2)
-        recover = datetime_pred[np.argmin(np.abs(24 - y_forward))]
-        recov_date = str(recover)[:10]
-        ax.text(0.05, 0.06, f"{loss} V/day\nrecover {recov_date}", transform=ax.transAxes)
+        loss_3 = np.round(np.abs(v_per_day_3), 2)
+        recover_3 = datetime_pred[np.argmin(np.abs(24 - y_forward))]
+        ax.axvline(recover_3, color="red")
+        recov_date = str(recover_3)[5:10]
+        ax.plot(datetime_pred_5, y_forward_5, label="last 5 days prediction")
+        recover = datetime_pred_5[np.argmin(np.abs(24 - y_forward_5))]
+        recov_date_5 = str(recover)[5:10]
         ax.axhline(24, color="red")
         ax.axvline(recover, color="red")
+        ax.axvspan(recover_3, recover, alpha=0.1, color='red')
+        ax.text(0.05, 0.06, f"{loss}-{loss_3} V/day\nrecover {recov_date} - {recov_date_5}", transform=ax.transAxes)
         ax.grid()
         ax.set(ylabel="Voltage (v)", title=title)
         plt.xticks(rotation=45)

@@ -1,10 +1,12 @@
 import numpy as np
+import xarray as xr
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 
 
-def plot_qc(ds, plots_dir):
+def plot_qc(nc, plots_dir):
+    ds = xr.open_dataset(nc)
     attrs = ds.attrs
     fig_name_base = f'{attrs["glider_serial"]}_M{attrs["deployment_id"]}'
     vars = list(ds)

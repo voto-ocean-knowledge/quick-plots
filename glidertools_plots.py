@@ -8,8 +8,12 @@ import xarray as xr
 from gridded_plots import additional_vars, glider_variables, sort_by_priority_list, cmap_dict, label_replace
 
 sys.path.append("/home/pipeline/GliderTools")
+sys.path.append("/home/pipeline/voto_glider_qc")
 # noinspection PyUnresolvedReferences
 import glidertools as gt
+# noinspection PyUnresolvedReferences
+from flag_qartod import apply_ioos_flags
+
 
 
 def public_plots(nc, plots_dir):
@@ -17,6 +21,8 @@ def public_plots(nc, plots_dir):
     # Clean out any bad times
     end = pd.to_datetime(ds.time.max().values)
     ds = ds.sel(time=slice(end - datetime.timedelta(days=60), end))
+    # Apply flags from ioos
+    ds = apply_ioos_flags(ds)
     # Prepare a variable of averaged time per profile. This is used in plotting later
     profile_time = ds.time.values.copy()
     profile_index = ds.profile_index

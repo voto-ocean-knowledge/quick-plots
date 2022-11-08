@@ -8,7 +8,7 @@ import pandas as pd
 def plot_qc(nc, plots_dir):
     ds = xr.open_dataset(nc)
     attrs = ds.attrs
-    fig_name_base = f'{attrs["glider_serial"]}_M{attrs["deployment_id"]}'
+    fig_name_base = f'SEA{attrs["glider_serial"]}_M{attrs["deployment_id"]}'
     vars = list(ds)
     time = ds["time"]
     for var_name in vars:

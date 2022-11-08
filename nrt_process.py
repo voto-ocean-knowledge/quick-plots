@@ -10,6 +10,7 @@ sys.path.append(str(script_dir))
 os.chdir(script_dir)
 from gridded_plots import create_plots, make_map
 from pilot_plots import battery_plots
+from qc_plots import plot_qc
 
 _log = logging.getLogger(__name__)
 logging.basicConfig(filename='/data/log/nrt_plots.log',
@@ -62,6 +63,7 @@ def main():
         ts_dir = f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/timeseries/'
         ts_file = list(pathlib.Path(ts_dir).glob('*.nc'))[0]
         public_plots(ts_file, outdir)
+        plot_qc(ts_file, outdir)
         _log.info("start pilot plots")
         combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.parquet"))
         if combi_nav_files:

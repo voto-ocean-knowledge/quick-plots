@@ -212,7 +212,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
         end = pandas.to_datetime(dataset.time.values[-1])
         dataset = dataset.sel(time=slice(end - datetime.timedelta(days=7), end))
     num_variables = len(variables)
-    fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3.5 * num_variables))
+    fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3.5 * num_variables), sharex="col")
     axs = axs.ravel()
     for i, ax in enumerate(axs):
         variable = variables[i]
@@ -264,7 +264,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
         if grid:
             days = (1, 5, 10, 15, 20, 25)
         else:
-            days = np.arange(1, 31)
+            days = np.arange(1, 32)
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_minor_locator(mdates.DayLocator(days))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("\n%b %Y"))

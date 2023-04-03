@@ -18,7 +18,7 @@ logging.basicConfig(filename='/data/log/nrt_plots.log',
                     format='%(asctime)s %(levelname)-8s %(message)s',
                     level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
-glider_no_proc = [57]
+glider_no_proc = []
 
 
 def main():

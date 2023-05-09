@@ -106,7 +106,7 @@ def grid_data(
     bins=None,
     how="mean",
     interp_lim=6,
-    verbose=True,
+    verbose=False,
     return_xarray=True,
 ):
     """

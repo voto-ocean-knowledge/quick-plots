@@ -63,7 +63,7 @@ def main():
         ts_dir = f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/timeseries/'
         ts_file = list(pathlib.Path(ts_dir).glob('*.nc'))[0]
         public_plots(ts_file, outdir)
-        plot_qc(ts_file, outdir)
+        #plot_qc(ts_file, outdir)
         _log.info("start pilot plots")
         combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.parquet"))
         if combi_nav_files:

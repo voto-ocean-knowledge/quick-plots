@@ -10,7 +10,7 @@ def transfer_nc_attrs(frame, input_xds, output_arr, output_name, **attrs):
     no_parent_frame = inspect.getmodule(frame.f_back) is None
     if not_dataarray:
         if no_parent_frame:
-        return output_arr
+            return output_arr
     else:
         if output_name is None:
             output_name = input_xds.name

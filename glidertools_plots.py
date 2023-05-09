@@ -6,11 +6,8 @@ import datetime
 import pandas as pd
 import xarray as xr
 from gridded_plots import additional_vars, glider_variables, sort_by_priority_list, cmap_dict, label_replace
-
-sys.path.append("/home/pipeline/GliderTools")
+from gt_utils import grid_data
 sys.path.append("/home/pipeline/voto_glider_qc")
-# noinspection PyUnresolvedReferences
-import glidertools as gt
 # noinspection PyUnresolvedReferences
 from flag_qartod import apply_flags
 
@@ -50,21 +47,11 @@ def public_plots(nc, plots_dir):
         variable = variables[i]
         # GliderTools cleaning step. Ideally this would be a wrapper, but wrapper doesn't do both IQR and std dev atm
         var = ds[variable]
-        std_devs = 4
-        iqr = 2
-        if 'chlor' in variable or 'DOWN' in variable:
-            std_devs = 10000
-            iqr = 2
-        elif "sal" or "den" in variable:
-            std_devs = 50
-            iqr = 50
-        var_iqr = gt.cleaning.outlier_bounds_iqr(var, multiplier=iqr)
-        var_std = gt.cleaning.outlier_bounds_std(var, multiplier=std_devs)
-        mask = np.isnan(var_iqr) + np.isnan(var_std)
         var_qc = var.copy()
-        var_qc.values[mask] = np.nan
         colormap = cmap_dict[variable]
-        ax, im = gt.plot(ds.profile_mean_time, ds.depth, var_qc, cmap=colormap, robust=True, ax=ax)
+        gridded = grid_data(ds.profile_mean_time, ds.depth, var_qc)
+        im = ax.pcolor(gridded.profile_mean_time, gridded.depth, gridded.values, cmap=colormap,
+                       vmin=np.nanpercentile(gridded.values, 0.5), vmax=np.nanpercentile(gridded.values, 99.5))
         ax.set_ylim(max_depth, 0)
         ax.set_title(label_replace(str(variable)))
         extent = ds.time.max() - ds.time.min()
@@ -83,7 +70,6 @@ def public_plots(nc, plots_dir):
         plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
         ymin, ymax = ax.get_ylim()
         ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
-        ax.collections[-1].colorbar.remove()
         plt.colorbar(mappable=im, ax=ax, label=label_replace(ds[variable].units), aspect=13, pad=0.02)
     plt.tight_layout()
     filename = plots_dir / f'SEA{ds.glider_serial}_M{ds.deployment_id}_gt.png'

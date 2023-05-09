@@ -54,7 +54,6 @@ def battery_plots(combined_nav_file, out_dir):
     recover = datetime_pred[y_forward[:, 0] > 24][-1]
     v_per_ns = regr.coef_[0][0]
     v_per_day = v_per_ns * 24 * 60 * 60 * 1e9
-
     fig, ax = plt.subplots(figsize=(12, 8))
     if df_mean.Voltage.min() > 28:
         _log.info("voltage too high to make prediction plot")
@@ -68,14 +67,17 @@ def battery_plots(combined_nav_file, out_dir):
         loss_3 = np.round(np.abs(v_per_day_3), 2)
         recover_3 = datetime_pred[np.argmin(np.abs(24 - y_forward))]
         ax.axvline(recover_3, color="red")
-        recov_date = str(recover_3)[5:10]
         ax.plot(datetime_pred_5, y_forward_5, label="last 5 days prediction")
-        recover = datetime_pred_5[np.argmin(np.abs(24 - y_forward_5))]
-        recov_date_5 = str(recover)[5:10]
+        recover_5 = datetime_pred_5[np.argmin(np.abs(24 - y_forward_5))]
+        if recover_3 > recover_5:
+            r_string = f"{str(recover_5)[5:10]} - {str(recover_3)[5:10]}"
+        else:
+            r_string = f"{str(recover_3)[5:10]} - {str(recover_5)[5:10]}"
         ax.axhline(24, color="red")
         ax.axvline(recover, color="red")
         ax.axvspan(recover_3, recover, alpha=0.1, color='red')
-        ax.text(0.05, 0.06, f"{loss}-{loss_3} V/day\nrecover {recov_date} - {recov_date_5}", transform=ax.transAxes)
+        v_string = f"Voltage: {df['Voltage'].values[-1]} V\n{loss}-{loss_3} V/day\nrecover {r_string}"
+        ax.text(0.05, 0.08, v_string, transform=ax.transAxes)
         ax.grid()
         ax.set(ylabel="Voltage (v)", title=title)
         plt.xticks(rotation=45)

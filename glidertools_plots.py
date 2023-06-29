@@ -12,14 +12,13 @@ sys.path.append("/home/pipeline/voto_glider_qc")
 from flag_qartod import apply_flags
 
 
-
 def public_plots(nc, plots_dir):
     ds = xr.open_dataset(nc)
     # Clean out any bad times
     end = pd.to_datetime(ds.time.max().values)
     ds = ds.sel(time=slice(end - datetime.timedelta(days=60), end))
     # Apply flags from ioos
-    ds = apply_flags(ds, var_max_flags={"oxygen_concentration": 3, "cdom": 3})
+    ds = apply_flags(ds, var_max_flags={"oxygen_concentration": 4, "cdom": 3})
     # Prepare a variable of averaged time per profile. This is used in plotting later
     profile_time = ds.time.values.copy()
     profile_index = ds.profile_index

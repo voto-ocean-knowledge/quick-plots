@@ -13,13 +13,15 @@ logging.basicConfig(filename='/data/log/ctd_plots.log',
                     level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
+
 def init_erddap(protocol="tabledap"):
     # Setup initial ERDDAP connection
-    e = ERDDAP(
+    erddap_instance = ERDDAP(
         server="https://erddap.observations.voiceoftheocean.org/erddap",
         protocol=protocol,
     )
-    return e
+    return erddap_instance
+
 
 def comp_plot(glider, ctd):
     df_max = glider.groupby("dive_num").max()
@@ -38,10 +40,23 @@ def comp_plot(glider, ctd):
     fig, ax = plt.subplots(2, 2, figsize=(16, 12), sharey="row",)
     ax = ax.ravel()
     for i, variable in enumerate(("temperature", "salinity", "oxygen_concentration", "chlorophyll")):
-        ax[i].plot(glider[variable], glider.pressure, label="glider")
-        ax[i].plot(ctd[variable], ctd.pressure, label="ctd")
-        prop = int(len(ctd)/len(glider))
-        pool = list(ctd[variable])[::prop] + list(glider[variable])
+        if variable == "oxygen_concentration":
+            cutoff = 9
+        else:
+            cutoff = 3
+        glider_sub = glider.copy()
+        if f"{variable}_qc" in list(glider_sub):
+            glider_sub = glider_sub[glider_sub[f"{variable}_qc"] < cutoff]
+        ctd_sub = ctd.copy()
+        if f"{variable}_qc" in list(ctd_sub):
+            ctd_sub = ctd_sub[ctd_sub[f"{variable}_qc"] < cutoff]
+        ax[i].plot(glider_sub[variable], glider_sub.pressure, label="glider")
+        ax[i].plot(ctd_sub[variable], ctd_sub.pressure, label="ctd")
+        if len(glider_sub) > 0:
+            prop = int(len(ctd_sub)/len(glider_sub))
+            pool = list(ctd_sub[variable])[::prop] + list(glider_sub[variable])
+        else:
+            pool = list(ctd_sub[variable])
         min = np.nanpercentile(pool, 5)
         max = np.nanpercentile(pool, 95)
         vmin = min - (max - min) * 0.05
@@ -63,7 +78,7 @@ df_ctd.index = df_ctd["time"]
 df_ctd = df_ctd.sort_index()
 
 
-def nearby_ctd(ds_glider, comparison_plots=False, max_dist = 0.5, max_days = 2):
+def nearby_ctd(ds_glider, comparison_plots=False, max_dist=0.5, max_days=2, num_dives=5):
 
     name = f'SEA0{ds_glider.attrs["glider_serial"]}_M{ds_glider.attrs["deployment_id"]}'
     df_glider = ds_glider.to_pandas()
@@ -76,7 +91,7 @@ def nearby_ctd(ds_glider, comparison_plots=False, max_dist = 0.5, max_days = 2):
     dives = list(set(df_glider.dive_num))
     dives.sort()
     ind_start = 1
-    ind_end = min(5, len(dives) - 1)
+    ind_end = min(num_dives, len(dives) - 1)
     glider_start = df_glider[np.logical_and(df_glider.dive_num > dives[ind_start], df_glider.dive_num < dives[ind_end])]
     glider_end = df_glider[np.logical_and(df_glider.dive_num > dives[-ind_end], df_glider.dive_num < dives[-ind_start])]
 
@@ -159,7 +174,13 @@ def recent_ctds():
     i = 0
     summary_plot(df_relevant, ctd_casts, nrt_dict)
     for mission, ds in nrt_dict.items():
-        ctds = nearby_ctd(ds, comparison_plots=True)
+        _log.info(f"process: {mission}")
+        try:
+            ctds = nearby_ctd(ds, comparison_plots=True, num_dives=4)
+        except:
+            _log.warning("4 dives insufficient. Expanding to 8")
+            ctds = nearby_ctd(ds, comparison_plots=True, num_dives=8)
+
         found = list(ctds.keys())
         if found == ['deployment', 'recovery']:
             continue

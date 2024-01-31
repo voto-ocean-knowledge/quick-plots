@@ -41,7 +41,7 @@ def comp_plot(glider, ctd):
     ax = ax.ravel()
     for i, variable in enumerate(("temperature", "salinity", "oxygen_concentration", "chlorophyll")):
         if variable == "oxygen_concentration":
-            cutoff = 4
+            cutoff = 9
         else:
             cutoff = 3
         glider_sub = glider.copy()
@@ -49,7 +49,7 @@ def comp_plot(glider, ctd):
             glider_sub = glider_sub[glider_sub[f"{variable}_qc"] < cutoff]
         ctd_sub = ctd.copy()
         if f"{variable}_qc" in list(ctd_sub):
-            ctd_sub = ctd_sub[ctd_sub[f"{variable}_qc"] < 3]
+            ctd_sub = ctd_sub[ctd_sub[f"{variable}_qc"] < cutoff]
         ax[i].plot(glider_sub[variable], glider_sub.pressure, label="glider")
         ax[i].plot(ctd_sub[variable], ctd_sub.pressure, label="ctd")
         if len(glider_sub) > 0:
@@ -78,7 +78,7 @@ df_ctd.index = df_ctd["time"]
 df_ctd = df_ctd.sort_index()
 
 
-def nearby_ctd(ds_glider, comparison_plots=False, max_dist=0.5, max_days=2):
+def nearby_ctd(ds_glider, comparison_plots=False, max_dist=0.5, max_days=2, num_dives=5):
 
     name = f'SEA0{ds_glider.attrs["glider_serial"]}_M{ds_glider.attrs["deployment_id"]}'
     df_glider = ds_glider.to_pandas()
@@ -91,7 +91,7 @@ def nearby_ctd(ds_glider, comparison_plots=False, max_dist=0.5, max_days=2):
     dives = list(set(df_glider.dive_num))
     dives.sort()
     ind_start = 1
-    ind_end = min(10, len(dives) - 1)
+    ind_end = min(num_dives, len(dives) - 1)
     glider_start = df_glider[np.logical_and(df_glider.dive_num > dives[ind_start], df_glider.dive_num < dives[ind_end])]
     glider_end = df_glider[np.logical_and(df_glider.dive_num > dives[-ind_end], df_glider.dive_num < dives[-ind_start])]
 
@@ -175,7 +175,12 @@ def recent_ctds():
     summary_plot(df_relevant, ctd_casts, nrt_dict)
     for mission, ds in nrt_dict.items():
         _log.info(f"process: {mission}")
-        ctds = nearby_ctd(ds, comparison_plots=True)
+        try:
+            ctds = nearby_ctd(ds, comparison_plots=True, num_dives=4)
+        except:
+            _log.warning("4 dives insufficient. Expanding to 8")
+            ctds = nearby_ctd(ds, comparison_plots=True, num_dives=8)
+
         found = list(ctds.keys())
         if found == ['deployment', 'recovery']:
             continue

@@ -48,8 +48,11 @@ def comp_plot(glider, ctd):
             ctd_sub = ctd_sub[ctd_sub[f"{variable}_qc"] < 3]
         ax[i].plot(glider_sub[variable], glider_sub.pressure, label="glider")
         ax[i].plot(ctd_sub[variable], ctd_sub.pressure, label="ctd")
-        prop = int(len(ctd_sub)/len(glider_sub))
-        pool = list(ctd_sub[variable])[::prop] + list(glider_sub[variable])
+        if len(glider_sub) > 0:
+            prop = int(len(ctd_sub)/len(glider_sub))
+            pool = list(ctd_sub[variable])[::prop] + list(glider_sub[variable])
+        else:
+            pool = list(ctd_sub[variable])
         min = np.nanpercentile(pool, 5)
         max = np.nanpercentile(pool, 95)
         vmin = min - (max - min) * 0.05
@@ -71,7 +74,7 @@ df_ctd.index = df_ctd["time"]
 df_ctd = df_ctd.sort_index()
 
 
-def nearby_ctd(ds_glider, comparison_plots=False, max_dist = 0.5, max_days = 2):
+def nearby_ctd(ds_glider, comparison_plots=False, max_dist=0.5, max_days=2):
 
     name = f'SEA0{ds_glider.attrs["glider_serial"]}_M{ds_glider.attrs["deployment_id"]}'
     df_glider = ds_glider.to_pandas()
@@ -84,7 +87,7 @@ def nearby_ctd(ds_glider, comparison_plots=False, max_dist = 0.5, max_days = 2):
     dives = list(set(df_glider.dive_num))
     dives.sort()
     ind_start = 1
-    ind_end = min(5, len(dives) - 1)
+    ind_end = min(10, len(dives) - 1)
     glider_start = df_glider[np.logical_and(df_glider.dive_num > dives[ind_start], df_glider.dive_num < dives[ind_end])]
     glider_end = df_glider[np.logical_and(df_glider.dive_num > dives[-ind_end], df_glider.dive_num < dives[-ind_start])]
 
@@ -167,6 +170,7 @@ def recent_ctds():
     i = 0
     summary_plot(df_relevant, ctd_casts, nrt_dict)
     for mission, ds in nrt_dict.items():
+        _log.info(f"process: {mission}")
         ctds = nearby_ctd(ds, comparison_plots=True)
         found = list(ctds.keys())
         if found == ['deployment', 'recovery']:

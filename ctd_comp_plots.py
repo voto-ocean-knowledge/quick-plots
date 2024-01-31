@@ -40,9 +40,13 @@ def comp_plot(glider, ctd):
     fig, ax = plt.subplots(2, 2, figsize=(16, 12), sharey="row",)
     ax = ax.ravel()
     for i, variable in enumerate(("temperature", "salinity", "oxygen_concentration", "chlorophyll")):
+        if variable == "oxygen_concentration":
+            cutoff = 4
+        else:
+            cutoff = 3
         glider_sub = glider.copy()
         if f"{variable}_qc" in list(glider_sub):
-            glider_sub = glider_sub[glider_sub[f"{variable}_qc"] < 3]
+            glider_sub = glider_sub[glider_sub[f"{variable}_qc"] < cutoff]
         ctd_sub = ctd.copy()
         if f"{variable}_qc" in list(ctd_sub):
             ctd_sub = ctd_sub[ctd_sub[f"{variable}_qc"] < 3]

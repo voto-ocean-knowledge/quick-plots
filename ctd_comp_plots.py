@@ -13,13 +13,15 @@ logging.basicConfig(filename='/data/log/ctd_plots.log',
                     level=logging.INFO,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
+
 def init_erddap(protocol="tabledap"):
     # Setup initial ERDDAP connection
-    e = ERDDAP(
+    erddap_instance = ERDDAP(
         server="https://erddap.observations.voiceoftheocean.org/erddap",
         protocol=protocol,
     )
-    return e
+    return erddap_instance
+
 
 def comp_plot(glider, ctd):
     df_max = glider.groupby("dive_num").max()
@@ -38,10 +40,16 @@ def comp_plot(glider, ctd):
     fig, ax = plt.subplots(2, 2, figsize=(16, 12), sharey="row",)
     ax = ax.ravel()
     for i, variable in enumerate(("temperature", "salinity", "oxygen_concentration", "chlorophyll")):
-        ax[i].plot(glider[variable], glider.pressure, label="glider")
-        ax[i].plot(ctd[variable], ctd.pressure, label="ctd")
-        prop = int(len(ctd)/len(glider))
-        pool = list(ctd[variable])[::prop] + list(glider[variable])
+        glider_sub = glider.copy()
+        if f"{variable}_qc" in list(glider_sub):
+            glider_sub = glider_sub[glider_sub[f"{variable}_qc"] < 3]
+        ctd_sub = ctd.copy()
+        if f"{variable}_qc" in list(ctd_sub):
+            ctd_sub = ctd_sub[ctd_sub[f"{variable}_qc"] < 3]
+        ax[i].plot(glider_sub[variable], glider_sub.pressure, label="glider")
+        ax[i].plot(ctd_sub[variable], ctd_sub.pressure, label="ctd")
+        prop = int(len(ctd_sub)/len(glider_sub))
+        pool = list(ctd_sub[variable])[::prop] + list(glider_sub[variable])
         min = np.nanpercentile(pool, 5)
         max = np.nanpercentile(pool, 95)
         vmin = min - (max - min) * 0.05

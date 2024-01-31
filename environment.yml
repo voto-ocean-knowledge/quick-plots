@@ -11,3 +11,5 @@ dependencies:
         - cfgrib
         - cartopy
         - pandas
+        - tqdm
+        - geopy

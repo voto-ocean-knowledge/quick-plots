@@ -1,3 +1,20 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+from tqdm import tqdm
+import geopy.distance
+import math
+import logging
+
+_log = logging.getLogger(__name__)
+if __name__ == '__main__':
+    logf = 'cmdconsole_plots.log'
+    logging.basicConfig(filename=logf,
+                        filemode='a',
+                        format='%(asctime)s %(levelname)-8s %(message)s',
+                        level=logging.WARNING,
+                        datefmt='%Y-%m-%d %H:%M:%S')
+    
 def basic_load(path):
     df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0)
     a = df['LOG_MSG'].str.split(',', expand=True)
@@ -112,12 +129,13 @@ def time_connections(path):
 
 def make_all_plots(path_to_cmdlog):
     active_m1 = load_cmd(path_to_cmdlog)
+    _log.warning("Command console data loaded. Starting with drift and velocities computation")
     drift_dist, drift_y, drif_x, speed, u_vel, v_vel, theta, time, tot_time = measure_drift(active_m1)
-    print('Drift computed. Starting with dst')
+    _log.warning("Drift computed. Starting with DST")
     dst = dst_data(path_to_cmdlog)
-    print('DST analysed. Starting with time')
+    _log.warning('DST analysed. Starting with time')
     cut, mins = time_connections(path_to_cmdlog)
-    print('All variables computed. Starting to create plots')
+    _log.warning('All variables computed. Starting to create plots')
     # Prepare subplot
     gridsize = (12, 4)  # rows-cols
     fig = plt.figure(figsize=(15, 10))
@@ -170,3 +188,4 @@ def make_all_plots(path_to_cmdlog):
     [a.set(xlabel='Cycle') for a in [ax6, ax7]]
     ax6.set_ylabel('N of connections')
     plt.tight_layout()
+    _log.warning('All plots have been created')

@@ -133,6 +133,7 @@ def make_all_plots(path_to_cmdlog):
     _log.debug('All variables computed. Starting to create plots')
     # Prepare subplot
     gridsize = (12, 4)  # rows-cols
+    plt.style.use('default')
     fig = plt.figure(figsize=(15, 10))
     ax1 = plt.subplot2grid(gridsize, (0, 0), colspan=2, rowspan=2)
     ax2 = plt.subplot2grid(gridsize, (0, 2), colspan=2, rowspan=2)

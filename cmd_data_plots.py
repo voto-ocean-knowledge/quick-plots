@@ -82,9 +82,10 @@ def measure_drift(cmd):
 def dst_data(path):
     nmea_sep = basic_load(path)
     time = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').DATE_TIME
+    surf_z = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6]
     dst_info = pd.DataFrame({"time": pd.to_datetime(time, dayfirst=True, yearfirst=False),
                              "pitch": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4].astype(float),
-                             "surf_depth": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6].astype(bool).astype(float)
+                             "surf_depth":surf_z.loc[surf_z!=''].astype(float)
                              })
     return dst_info
 

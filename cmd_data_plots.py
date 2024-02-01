@@ -190,6 +190,9 @@ def make_all_plots(path_to_cmdlog):
 def command_cosole_log_plots(glider, mission, plots_dir):
     _log.info(f"Make command console plots for SEA{glider} M{mission}")
     cmd_log = Path(f"/data/data_raw/nrt/SEA{str(glider).zfill(3)}/{str(mission).zfill(6)}/G-Logs/sea{str(glider).zfill(3)}.{mission}.com.raw.log")
+    if not cmd_log.exists():
+        _log.warning(f"No command log found at {cmd_log}")
+        return
     make_all_plots(cmd_log)
     filename = plots_dir / f'SEA{glider}_M{mission}_cmd_log.png'
     plt.savefig(filename, format='png', transparent=True)

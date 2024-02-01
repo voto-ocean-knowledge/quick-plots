@@ -2,7 +2,7 @@ import sys
 import os
 import pathlib
 import logging
-
+from cmd_data_plots import command_cosole_log_plots
 from glidertools_plots import public_plots
 
 script_dir = pathlib.Path(__file__).parent.absolute()
@@ -65,6 +65,7 @@ def main():
         public_plots(ts_file, outdir)
         #plot_qc(ts_file, outdir)
         _log.info("start pilot plots")
+        command_cosole_log_plots(glider, mission, outdir)
         combi_nav_files = list(pathlib.Path(f'/data/data_l0_pyglider/nrt/SEA{glider}/M{mission}/rawnc/').glob("*rawgli.parquet"))
         if combi_nav_files:
             battery_plots(combi_nav_files[0], outdir)

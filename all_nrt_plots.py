@@ -1,4 +1,5 @@
 import pathlib
+from cmd_data_plots import command_cosole_log_plots
 from glidertools_plots import public_plots
 
 if __name__ == '__main__':
@@ -10,3 +11,4 @@ if __name__ == '__main__':
         mission = int(parts[-3][1:])
         outdir = pathlib.Path(f"/data/plots/nrt/SEA{glider}/M{mission}/")
         public_plots(ts_file, outdir)
+        command_cosole_log_plots(glider, mission, outdir)

@@ -5,6 +5,7 @@ from tqdm import tqdm
 import geopy.distance
 import math
 import logging
+from pathlib import Path
 
 _log = logging.getLogger(__name__)
 if __name__ == '__main__':
@@ -189,3 +190,11 @@ def make_all_plots(path_to_cmdlog):
     ax6.set_ylabel('N of connections')
     plt.tight_layout()
     _log.warning('All plots have been created')
+    return fig
+
+
+def command_cosole_log_plots(glider, mission, plots_dir):
+    cmd_log = Path(f"/data/data_raw/nrt/SEA{str(glider).zfill(3)}/{str(mission).zfill(6)}/G-Logs/sea{str(glider).zfill(3)}.{mission}.com.raw.log")
+    make_all_plots(cmd_log)
+    filename = plots_dir / f'SEA{glider}_M{mission}_cmd_log.png'
+    plt.savefig(filename, format='png', transparent=True)

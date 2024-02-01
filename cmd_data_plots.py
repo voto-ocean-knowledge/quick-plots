@@ -84,7 +84,7 @@ def dst_data(path):
     time = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').DATE_TIME
     dst_info = pd.DataFrame({"time": pd.to_datetime(time, dayfirst=True, yearfirst=False),
                              "pitch": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4].astype(float),
-                             "surf_depth": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6].astype(float)
+                             "surf_depth": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6].astype(bool).astype(float)
                              })
     return dst_info
 

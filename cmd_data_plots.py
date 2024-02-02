@@ -84,9 +84,10 @@ def dst_data(path):
     nmea_sep = basic_load(path)
     time = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').DATE_TIME
     surf_z = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6]
+    surf_z = surf_z[~surf_z.astype(str).str.lower().str.contains('nan')]
     dst_info = pd.DataFrame({"time": time,
                              "pitch": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4].astype(float),
-                             "surf_depth":surf_z[surf_z.str.contains('\d', regex=True)].astype(float)})
+                             "surf_depth":surf_z[surf_z.str.contains('\d', regex=True).astype(bool)].astype(float)})
     return dst_info
 
 

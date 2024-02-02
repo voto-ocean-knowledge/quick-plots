@@ -6,6 +6,7 @@ import geopy.distance
 import math
 import logging
 from pathlib import Path
+import datetime
 
 _log = logging.getLogger(__name__)
 
@@ -14,14 +15,14 @@ def basic_load(path):
     df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0)
     a = df['LOG_MSG'].str.split(',', expand=True)
     data = pd.concat([df, a], axis=1)
-    return data
+    data.DATE_TIME = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
+    # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
+    sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')
+    return sub_data
 
 
 def load_cmd(path):
     cmd = basic_load(path)
-
-    # Transform time from object to datetime
-    cmd.DATE_TIME = pd.to_datetime(cmd.DATE_TIME, dayfirst=True, yearfirst=False, )
     # Add cycle
     cmd['cycle'] = cmd.where(cmd[0] == '$SEAMRS').dropna(how='all')[3]
     # create lat lon columns in decimal degrees
@@ -39,7 +40,7 @@ def load_cmd(path):
         res = degrees + minutes / 60
         return res
 
-    df_glider = pd.DataFrame({"time": pd.to_datetime(cmd.dropna(subset=['lon', 'lat']).DATE_TIME),
+    df_glider = pd.DataFrame({"time": cmd.dropna(subset=['lon', 'lat']).DATE_TIME,
                               "lon": dd_coord(cmd['lon'].dropna().astype(float).values),
                               "lat": dd_coord(cmd['lat'].dropna().astype(float).values),
                               "Cycle": cmd.dropna(subset=['lon', 'lat']).cycle.astype(int)})
@@ -83,7 +84,7 @@ def dst_data(path):
     nmea_sep = basic_load(path)
     time = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').DATE_TIME
     surf_z = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6]
-    dst_info = pd.DataFrame({"time": pd.to_datetime(time, dayfirst=True, yearfirst=False),
+    dst_info = pd.DataFrame({"time": time,
                              "pitch": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4].astype(float),
                              "surf_depth":surf_z.loc[surf_z!=''].astype(float)
                              })
@@ -92,9 +93,6 @@ def dst_data(path):
 
 def time_connections(path):
     cmd = basic_load(path)
-
-    # Transform time from object to datetime
-    cmd.DATE_TIME = pd.to_datetime(cmd.DATE_TIME, dayfirst=True, yearfirst=False, )
     cmd['Cycle'] = np.nan
     cycle = cmd.where(cmd[0] == '$SEAMRS')
 
@@ -113,13 +111,13 @@ def time_connections(path):
         i_start = a.index[int(np.abs(a.index - start).argmin())]
         i_end = a.index[int(np.abs(a.index - end).argmin())]
 
-        cmd.iloc[i_start:i_end + 1, -1] = int(cyclenum[i])
+        cmd.loc[i_start:i_end, 'Cycle'] = int(cyclenum[i])
 
     hang_conn = cmd.where(cmd.LOG_LEVEL == 'INFO').dropna(how='all')
     a = hang_conn.iloc[np.where((hang_conn.LOG_MSG == 'Glider Connected !') | (hang_conn.LOG_MSG == 'Glider Hang !'))]
-    bla = np.diff(pd.to_datetime(a.DATE_TIME))
+    bla = np.diff(a.DATE_TIME)
     minutes = (bla / np.timedelta64(1000000000, 'ns')) / 60
-    a.loc[:, 0] = pd.to_datetime(a.DATE_TIME)
+    a.loc[:, 0] = a.DATE_TIME
     return a, minutes
 
 
@@ -135,7 +133,7 @@ def make_all_plots(path_to_cmdlog):
     # Prepare subplot
     gridsize = (12, 4)  # rows-cols
     with plt.style.context('default'):
-        fig = plt.figure(figsize=(15, 10))
+        fig = plt.figure(figsize=(15, 12))
         ax1 = plt.subplot2grid(gridsize, (0, 0), colspan=2, rowspan=2)
         ax2 = plt.subplot2grid(gridsize, (0, 2), colspan=2, rowspan=2)
         ax3 = plt.subplot2grid(gridsize, (2, 0), colspan=4, rowspan=2)
@@ -179,11 +177,14 @@ def make_all_plots(path_to_cmdlog):
                     label=f'Average time between GLIDERHANG on the same cycle {np.round(np.nanmean(mins[np.where(mins <= 10)]), 1)} min')
         ax9.set_ylim(-2, 15)
 
-        [a.grid() for a in [ax1, ax2, ax3, ax4, ax5, ax6, ax7, ax8, ax9]]
-        [a.legend(loc=9) for a in [ax6, ax7, ax8, ax9]]
-        [a.set(ylabel='Minutes') for a in [ax7, ax8, ax9]]
+        [a.grid() for a in [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]]
+        [a.legend(loc=9) for a in [ax6,ax7,ax8,ax9]]
+        [a.set( ylabel='Minutes') for a in [ax7,ax8, ax9]]
         [a.set(xlabel='Cycle') for a in [ax6, ax7]]
+        [a.tick_params(axis='x', labelrotation=20) for a in [ax1, ax2, ax8, ax9]]
         ax6.set_ylabel('N of connections')
+        [a.set_xlim(active_m1.time.min(), active_m1.time.max()) for a in [ax1,ax2,ax3,ax4,ax5,ax8,ax9]]
+        [a.set_xlim(active_m1.Cycle.min(), active_m1.Cycle.max()) for a in [ax6,ax7]]
         plt.tight_layout()
     _log.debug('All plots have been created')
     return fig

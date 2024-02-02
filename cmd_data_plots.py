@@ -86,7 +86,7 @@ def dst_data(path):
     surf_z = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6]
     dst_info = pd.DataFrame({"time": time,
                              "pitch": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4].astype(float),
-                             "surf_depth":surf_z.loc[surf_z!=''].astype(float)
+                             "surf_depth":surf_z[surf_z.str.contains('\d', regex=True)].astype(float)})
                              })
     return dst_info
 

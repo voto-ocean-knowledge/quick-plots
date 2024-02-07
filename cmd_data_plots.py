@@ -123,70 +123,74 @@ def time_connections(path):
 
 def make_all_plots(path_to_cmdlog):
     active_m1 = load_cmd(path_to_cmdlog)
-    _log.debug("Command console data loaded. Starting with drift and velocities computation")
-    drift_dist, drift_y, drif_x, speed, u_vel, v_vel, theta, time, tot_time = measure_drift(active_m1)
-    _log.debug("Drift computed. Starting with DST")
-    dst = dst_data(path_to_cmdlog)
-    _log.debug('DST analysed. Starting with time')
-    cut, mins = time_connections(path_to_cmdlog)
-    _log.debug('All variables computed. Starting to create plots')
-    # Prepare subplot
-    gridsize = (12, 4)  # rows-cols
-    with plt.style.context('default'):
-        fig = plt.figure(figsize=(15, 12))
-        ax1 = plt.subplot2grid(gridsize, (0, 0), colspan=2, rowspan=2)
-        ax2 = plt.subplot2grid(gridsize, (0, 2), colspan=2, rowspan=2)
-        ax3 = plt.subplot2grid(gridsize, (2, 0), colspan=4, rowspan=2)
-        ax4 = plt.subplot2grid(gridsize, (4, 0), colspan=4, rowspan=2)
-        ax5 = plt.subplot2grid(gridsize, (6, 0), colspan=4, rowspan=2)
-        ax6 = plt.subplot2grid(gridsize, (8, 0), colspan=2, rowspan=2)
-        ax7 = plt.subplot2grid(gridsize, (10, 0), colspan=2, rowspan=2)
-        ax8 = plt.subplot2grid(gridsize, (8, 2), colspan=2, rowspan=2)
-        ax9 = plt.subplot2grid(gridsize, (10, 2), colspan=2, rowspan=2)
-
-        # Surface pitch and depth
-        ax1.scatter(dst.time, dst.pitch, s=10)
-        ax1.set(ylabel='Surface pitch (deg)')
-        ax2.scatter(dst.time, dst.surf_depth, s=10)
-        ax2.set(ylabel='Surface depth (m)')
-
-        ax3.plot(time, drift_dist)
-        ax3.scatter(time, drift_dist, s=10)
-        ax3.set(ylabel='Surface drfit \n(m)')
-
-        ax4.plot(time, theta)
-        ax4.scatter(time, theta, s=10)
-        ax4.set(ylabel='Drift direction \n(deg)')
-
-        ax5.plot(time, speed)
-        ax5.scatter(time, speed, s=10)
-        ax5.set(ylabel='Surface currents velocity \n(m/s)')
-
-        conn = np.round(cut.groupby('Cycle').count().MODULE.mean(), 1)
-        ax6.scatter(cut.groupby('Cycle').count().index, cut.groupby('Cycle').count().MODULE / 2,
-                    label=f'Average num of connections is {conn} ', s=10)
-
-        ax7.scatter(cut.groupby('Cycle').count().index, tot_time,
-                    label=f'Average time at surface is {np.round(np.nanmean(tot_time), 1)} min', s=10)
-        ax8.scatter(cut['DATE_TIME'][:-1], mins,
-                    label=f'Average time between surfacings {np.round(np.nanmean(mins[np.where(mins >= 10)]), 1)} min ',
-                    s=10)
-        ax8.set_ylim(bottom=30)
-
-        ax9.scatter(cut['DATE_TIME'][:-1], mins, s=10,
-                    label=f'Average time between GLIDERHANG on the same cycle {np.round(np.nanmean(mins[np.where(mins <= 10)]), 1)} min')
-        ax9.set_ylim(-2, 15)
-
-        [a.grid() for a in [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]]
-        [a.legend(loc=9) for a in [ax6,ax7,ax8,ax9]]
-        [a.set( ylabel='Minutes') for a in [ax7,ax8, ax9]]
-        [a.set(xlabel='Cycle') for a in [ax6, ax7]]
-        [a.tick_params(axis='x', labelrotation=20) for a in [ax1, ax2, ax8, ax9]]
-        ax6.set_ylabel('N of connections')
-        [a.set_xlim(active_m1.time.min(), active_m1.time.max()) for a in [ax1,ax2,ax3,ax4,ax5,ax8,ax9]]
-        [a.set_xlim(active_m1.Cycle.min(), active_m1.Cycle.max()) for a in [ax6,ax7]]
-        plt.tight_layout()
-    _log.debug('All plots have been created')
+    if len(active_m1) > 1:
+        _log.debug("Command console data loaded. Starting with drift and velocities computation")
+        drift_dist, drift_y, drif_x, speed, u_vel, v_vel, theta, time, tot_time = measure_drift(active_m1)
+        _log.debug("Drift computed. Starting with DST")
+        dst = dst_data(path_to_cmdlog)
+        _log.debug('DST analysed. Starting with time')
+        cut, mins = time_connections(path_to_cmdlog)
+        _log.debug('All variables computed. Starting to create plots')
+        # Prepare subplot
+        gridsize = (12, 4)  # rows-cols
+        with plt.style.context('default'):
+            fig = plt.figure(figsize=(15, 12))
+            ax1 = plt.subplot2grid(gridsize, (0, 0), colspan=2, rowspan=2)
+            ax2 = plt.subplot2grid(gridsize, (0, 2), colspan=2, rowspan=2)
+            ax3 = plt.subplot2grid(gridsize, (2, 0), colspan=4, rowspan=2)
+            ax4 = plt.subplot2grid(gridsize, (4, 0), colspan=4, rowspan=2)
+            ax5 = plt.subplot2grid(gridsize, (6, 0), colspan=4, rowspan=2)
+            ax6 = plt.subplot2grid(gridsize, (8, 0), colspan=2, rowspan=2)
+            ax7 = plt.subplot2grid(gridsize, (10, 0), colspan=2, rowspan=2)
+            ax8 = plt.subplot2grid(gridsize, (8, 2), colspan=2, rowspan=2)
+            ax9 = plt.subplot2grid(gridsize, (10, 2), colspan=2, rowspan=2)
+    
+            # Surface pitch and depth
+            ax1.scatter(dst.time, dst.pitch, s=10)
+            ax1.set(ylabel='Surface pitch (deg)')
+            ax2.scatter(dst.time, dst.surf_depth, s=10)
+            ax2.set(ylabel='Surface depth (m)')
+    
+            ax3.plot(time, drift_dist)
+            ax3.scatter(time, drift_dist, s=10)
+            ax3.set(ylabel='Surface drfit \n(m)')
+    
+            ax4.plot(time, theta)
+            ax4.scatter(time, theta, s=10)
+            ax4.set(ylabel='Drift direction \n(deg)')
+    
+            ax5.plot(time, speed)
+            ax5.scatter(time, speed, s=10)
+            ax5.set(ylabel='Surface currents velocity \n(m/s)')
+    
+            conn = np.round(cut.groupby('Cycle').count().MODULE.mean(), 1)
+            ax6.scatter(cut.groupby('Cycle').count().index, cut.groupby('Cycle').count().MODULE / 2,
+                        label=f'Average num of connections is {conn} ', s=10)
+    
+            ax7.scatter(cut.groupby('Cycle').count().index, tot_time,
+                        label=f'Average time at surface is {np.round(np.nanmean(tot_time), 1)} min', s=10)
+            ax8.scatter(cut['DATE_TIME'][:-1], mins,
+                        label=f'Average time between surfacings {np.round(np.nanmean(mins[np.where(mins >= 10)]), 1)} min ',
+                        s=10)
+            ax8.set_ylim(bottom=30)
+    
+            ax9.scatter(cut['DATE_TIME'][:-1], mins, s=10,
+                        label=f'Average time between GLIDERHANG on the same cycle {np.round(np.nanmean(mins[np.where(mins <= 10)]), 1)} min')
+            ax9.set_ylim(-2, 15)
+    
+            [a.grid() for a in [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]]
+            [a.legend(loc=9) for a in [ax6,ax7,ax8,ax9]]
+            [a.set( ylabel='Minutes') for a in [ax7,ax8, ax9]]
+            [a.set(xlabel='Cycle') for a in [ax6, ax7]]
+            [a.tick_params(axis='x', labelrotation=20) for a in [ax1, ax2, ax8, ax9]]
+            ax6.set_ylabel('N of connections')
+            [a.set_xlim(active_m1.time.min(), active_m1.time.max()) for a in [ax1,ax2,ax3,ax4,ax5,ax8,ax9]]
+            [a.set_xlim(active_m1.Cycle.min(), active_m1.Cycle.max()) for a in [ax6,ax7]]
+            plt.tight_layout()
+        _log.debug('All plots have been created')
+    else:
+        _log.debug('No command console data exist or too little data avaialble as the mission just started')
+        
     return fig
 
 

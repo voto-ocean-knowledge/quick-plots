@@ -122,7 +122,11 @@ def time_connections(path):
 
 
 def make_all_plots(path_to_cmdlog):
+    fig = plt.figure(figsize=(15, 12))
     active_m1 = load_cmd(path_to_cmdlog)
+    if len(active_m1) < 1:
+        _log.debug("Command console data missing or too few data points as the mission just started")
+        return fig        
     _log.debug("Command console data loaded. Starting with drift and velocities computation")
     drift_dist, drift_y, drif_x, speed, u_vel, v_vel, theta, time, tot_time = measure_drift(active_m1)
     _log.debug("Drift computed. Starting with DST")
@@ -133,7 +137,6 @@ def make_all_plots(path_to_cmdlog):
     # Prepare subplot
     gridsize = (12, 4)  # rows-cols
     with plt.style.context('default'):
-        fig = plt.figure(figsize=(15, 12))
         ax1 = plt.subplot2grid(gridsize, (0, 0), colspan=2, rowspan=2)
         ax2 = plt.subplot2grid(gridsize, (0, 2), colspan=2, rowspan=2)
         ax3 = plt.subplot2grid(gridsize, (2, 0), colspan=4, rowspan=2)

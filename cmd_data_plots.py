@@ -170,6 +170,7 @@ def make_all_plots(path_to_cmdlog):
             ax2.scatter(dst.time, dst.surf_depth, s=10)
             ax2.set(ylabel='Surface depth (m)')
             [a.legend(loc=2) for a in [ax1,ax2]]
+            [a.grid() for a in [ax1,ax2]]
 
         ax3.plot(time, drift_dist)
         ax3.scatter(time, drift_dist, s=10)
@@ -198,7 +199,7 @@ def make_all_plots(path_to_cmdlog):
                     label=f'Average time between GLIDERHANG on the same cycle {np.round(np.nanmean(mins[np.where(mins <= 10)]), 1)} min')
         ax9.set_ylim(-2, 15)
 
-        [a.grid() for a in [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]]
+        [a.grid() for a in [ax3,ax4,ax5,ax6,ax7,ax8,ax9]]
         [a.legend(loc=9) for a in [ax6,ax7,ax8,ax9]]
         [a.set( ylabel='Minutes') for a in [ax7,ax8, ax9]]
         [a.set(xlabel='Cycle') for a in [ax6, ax7]]

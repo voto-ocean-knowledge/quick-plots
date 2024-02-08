@@ -11,20 +11,41 @@ import datetime
 _log = logging.getLogger(__name__)
 
 
-def basic_load(path):
+def load_all_cmd(path):
     df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0)
-    a = df['LOG_MSG'].str.split(',', expand=True)
-    data = pd.concat([df, a], axis=1)
-    data.DATE_TIME = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
+    if("Message" in df.columns):
+        new_cmd = pd.DataFrame({"DATE_TIME": pd.to_datetime(df['Date'] + ' ' + df['Time'], dayfirst=True, yearfirst=False,),
+                              "LOG_MSG": df.Message,
+                              })
+        a = new_cmd['LOG_MSG'].str.split(',', expand=True)
+        data = pd.concat([new_cmd, a], axis=1)
+        data['DATE_TIME'] = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
+        data['Cycle'] = df.Cycle
+    else:
+        new_cmd = pd.DataFrame({"DATE_TIME": pd.to_datetime(df.DATE_TIME, dayfirst=True, yearfirst=False, ),
+                          "LOG_MSG": df.LOG_MSG})
+        a = new_cmd['LOG_MSG'].str.split(',', expand=True)
+        data = pd.concat([new_cmd, a], axis=1)
+        sub_data['Cycle'] = np.nan
+        cycle = sub_data.where(sub_data[0] == '$SEAMRS')
+        cyclenum = cycle[3].dropna(how='all').unique()
+        a = sub_data.iloc[np.where((sub_data.LOG_MSG == 'Glider Connected !') | (sub_data.LOG_MSG == 'Glider Hang !'))]
+
+        for i in range(len(cyclenum)):
+            start = cycle.where(cycle[3] == cyclenum[i]).dropna(how='all').index[0]
+            end = cycle.where(cycle[3] == cyclenum[i]).dropna(how='all').index[-1]
+
+            i_start = a.index[int(np.abs(a.index - start).argmin())]
+            i_end = a.index[int(np.abs(a.index - end).argmin())]
+
+            sub_data.loc[i_start:i_end, 'Cycle'] = int(cyclenum[i])
+            
     # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
     sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')
     return sub_data
 
-
 def load_cmd(path):
-    cmd = basic_load(path)
-    # Add cycle
-    cmd['cycle'] = cmd.where(cmd[0] == '$SEAMRS').dropna(how='all')[3]
+    cmd = load_all_cmd(path)
     # create lat lon columns in decimal degrees
     cmd['lat'] = cmd.where(cmd[0] == '$SEAMRS').dropna(how='all')[8].str.rsplit('*').str[0]
     cmd['lon'] = cmd.where(cmd[0] == '$SEAMRS').dropna(how='all')[9].str.rsplit('*').str[0]
@@ -43,7 +64,7 @@ def load_cmd(path):
     df_glider = pd.DataFrame({"time": cmd.dropna(subset=['lon', 'lat']).DATE_TIME,
                               "lon": dd_coord(cmd['lon'].dropna().astype(float).values),
                               "lat": dd_coord(cmd['lat'].dropna().astype(float).values),
-                              "Cycle": cmd.dropna(subset=['lon', 'lat']).cycle.astype(int)})
+                              "Cycle": cmd.dropna(subset=['lon', 'lat']).Cycle.astype(int)})
     return df_glider
 
 
@@ -81,44 +102,27 @@ def measure_drift(cmd):
 
 
 def dst_data(path):
-    nmea_sep = basic_load(path)
+    nmea_sep = load_all_cmd(path)
     time = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').DATE_TIME
     surf_z = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6]
     surf_z = surf_z[~surf_z.astype(str).str.lower().str.contains('nan')]
     dst_info = pd.DataFrame({"time": time,
                              "pitch": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4].astype(float),
-                             "surf_depth":surf_z[surf_z.str.contains('\d', regex=True).astype(bool)].astype(float)})
+                             "surf_depth":surf_z[surf_z.str.contains('\d', regex=True).astype(bool)].astype(float),
+                             "Cycle": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').Cycle})
     return dst_info
 
 
 def time_connections(path):
-    cmd = basic_load(path)
-    cmd['Cycle'] = np.nan
-    cycle = cmd.where(cmd[0] == '$SEAMRS')
-
-    cyclenum = cycle[3].dropna(how='all').unique()
-
-    hang_conn = cmd.where(cmd.LOG_LEVEL == 'INFO').dropna(how='all')
-
-    # INFO has both hang and connect but also file transferring time !!!!
-
-    a = hang_conn.iloc[np.where((hang_conn.LOG_MSG == 'Glider Connected !') | (hang_conn.LOG_MSG == 'Glider Hang !'))]
-
-    for i in range(len(cyclenum)):
-        start = cycle.where(cycle[3] == cyclenum[i]).dropna(how='all').index[0]
-        end = cycle.where(cycle[3] == cyclenum[i]).dropna(how='all').index[-1]
-
-        i_start = a.index[int(np.abs(a.index - start).argmin())]
-        i_end = a.index[int(np.abs(a.index - end).argmin())]
-
-        cmd.loc[i_start:i_end, 'Cycle'] = int(cyclenum[i])
-
-    hang_conn = cmd.where(cmd.LOG_LEVEL == 'INFO').dropna(how='all')
-    a = hang_conn.iloc[np.where((hang_conn.LOG_MSG == 'Glider Connected !') | (hang_conn.LOG_MSG == 'Glider Hang !'))]
+    cmd = load_all_cmd(path)
+    cmd['LOG_MSG'] = cmd.LOG_MSG.str.replace('GLIDERCONNECT','Glider Connected !')
+    cmd['LOG_MSG'] = cmd.LOG_MSG.str.replace('GLIDERHANG','Glider Hang !')
+    a = cmd.iloc[np.where((cmd.LOG_MSG == 'Glider Connected !') | (cmd.LOG_MSG == 'Glider Hang !'))]
     bla = np.diff(a.DATE_TIME)
     minutes = (bla / np.timedelta64(1000000000, 'ns')) / 60
     a.loc[:, 0] = a.DATE_TIME
     return a, minutes
+
 
 
 def make_all_plots(path_to_cmdlog):
@@ -131,6 +135,10 @@ def make_all_plots(path_to_cmdlog):
     drift_dist, drift_y, drif_x, speed, u_vel, v_vel, theta, time, tot_time = measure_drift(active_m1)
     _log.debug("Drift computed. Starting with DST")
     dst = dst_data(path_to_cmdlog)
+    cycle_df = dst.copy()
+    cycle_df.time = mdates.date2num(cycle_df.time)
+    cycle_av = cycle_df.groupby('Cycle').mean()
+    cycle_av.time = mdates.num2date(cycle_av.time)
     _log.debug('DST analysed. Starting with time')
     cut, mins = time_connections(path_to_cmdlog)
     _log.debug('All variables computed. Starting to create plots')
@@ -148,10 +156,21 @@ def make_all_plots(path_to_cmdlog):
         ax9 = plt.subplot2grid(gridsize, (10, 2), colspan=2, rowspan=2)
 
         # Surface pitch and depth
-        ax1.scatter(dst.time, dst.pitch, s=10)
-        ax1.set(ylabel='Surface pitch (deg)')
-        ax2.scatter(dst.time, dst.surf_depth, s=10)
-        ax2.set(ylabel='Surface depth (m)')
+        if len(dst) <1:
+            ax1.text(0.3, 0.5, "DST NMEA sentence not enabled \nSurface pitch unavailable", fontsize="12",transform=ax1.transAxes)
+            #ax1.axis("off")
+            ax2.text(0.3, 0.5, "DST NMEA sentence not enabled \nSurface depth unavailable", fontsize="12", transform=ax2.transAxes)
+            #ax2.axis("off")
+        else: 
+            ax1.plot( cycle_av.time,cycle_av.pitch,c='r', label='Cycle average')
+            ax1.scatter(dst.time, dst.pitch, s=10)
+            ax1.set(ylabel='Surface pitch (deg)')
+
+            ax2.plot( cycle_av.time,cycle_av.surf_depth,c='r', label='Cycle average')
+            ax2.scatter(dst.time, dst.surf_depth, s=10)
+            ax2.set(ylabel='Surface depth (m)')
+            [a.legend(loc=2) for a in [ax1,ax2]]
+            [a.grid() for a in [ax1,ax2]]
 
         ax3.plot(time, drift_dist)
         ax3.scatter(time, drift_dist, s=10)
@@ -165,8 +184,8 @@ def make_all_plots(path_to_cmdlog):
         ax5.scatter(time, speed, s=10)
         ax5.set(ylabel='Surface currents velocity \n(m/s)')
 
-        conn = np.round(cut.groupby('Cycle').count().MODULE.mean(), 1)
-        ax6.scatter(cut.groupby('Cycle').count().index, cut.groupby('Cycle').count().MODULE / 2,
+        conn = np.round(cut.groupby('Cycle').count().LOG_MSG.mean(), 1)
+        ax6.scatter(cut.groupby('Cycle').count().index, cut.groupby('Cycle').count().LOG_MSG / 2,
                     label=f'Average num of connections is {conn} ', s=10)
 
         ax7.scatter(cut.groupby('Cycle').count().index, tot_time,
@@ -180,7 +199,7 @@ def make_all_plots(path_to_cmdlog):
                     label=f'Average time between GLIDERHANG on the same cycle {np.round(np.nanmean(mins[np.where(mins <= 10)]), 1)} min')
         ax9.set_ylim(-2, 15)
 
-        [a.grid() for a in [ax1,ax2,ax3,ax4,ax5,ax6,ax7,ax8,ax9]]
+        [a.grid() for a in [ax3,ax4,ax5,ax6,ax7,ax8,ax9]]
         [a.legend(loc=9) for a in [ax6,ax7,ax8,ax9]]
         [a.set( ylabel='Minutes') for a in [ax7,ax8, ax9]]
         [a.set(xlabel='Cycle') for a in [ax6, ax7]]

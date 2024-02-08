@@ -19,17 +19,13 @@ def load_all_cmd(path):
                               })
         a = new_cmd['LOG_MSG'].str.split(',', expand=True)
         data = pd.concat([new_cmd, a], axis=1)
-        data.DATE_TIME = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
+        data['DATE_TIME'] = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
         data['Cycle'] = df.Cycle
-        # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
-        sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')
     else:
         new_cmd = pd.DataFrame({"DATE_TIME": pd.to_datetime(df.DATE_TIME, dayfirst=True, yearfirst=False, ),
                           "LOG_MSG": df.LOG_MSG})
         a = new_cmd['LOG_MSG'].str.split(',', expand=True)
         data = pd.concat([new_cmd, a], axis=1)
-        # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
-        sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')
         sub_data['Cycle'] = np.nan
         cycle = sub_data.where(sub_data[0] == '$SEAMRS')
         cyclenum = cycle[3].dropna(how='all').unique()
@@ -43,6 +39,9 @@ def load_all_cmd(path):
             i_end = a.index[int(np.abs(a.index - end).argmin())]
 
             sub_data.loc[i_start:i_end, 'Cycle'] = int(cyclenum[i])
+            
+    # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
+    sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')
     return sub_data
 
 def load_cmd(path):
@@ -157,14 +156,20 @@ def make_all_plots(path_to_cmdlog):
         ax9 = plt.subplot2grid(gridsize, (10, 2), colspan=2, rowspan=2)
 
         # Surface pitch and depth
-        ax1.plot( cycle_av.time,cycle_av.pitch,c='r', label='Cycle average')
-        ax1.scatter(dst.time, dst.pitch, s=10)
-        ax1.set(ylabel='Surface pitch (deg)')
-        
-        ax2.plot( cycle_av.time,cycle_av.surf_depth,c='r', label='Cycle average')
-        ax2.scatter(dst.time, dst.surf_depth, s=10)
-        ax2.set(ylabel='Surface depth (m)')
-        [a.legend(loc=2) for a in [ax1,ax2]
+        if len(dst) <1:
+            ax1.text(0.3, 0.5, "DST NMEA sentence not enabled \nSurface pitch unavailable", fontsize="12",transform=ax1.transAxes)
+            #ax1.axis("off")
+            ax2.text(0.3, 0.5, "DST NMEA sentence not enabled \nSurface depth unavailable", fontsize="12", transform=ax2.transAxes)
+            #ax2.axis("off")
+        else: 
+            ax1.plot( cycle_av.time,cycle_av.pitch,c='r', label='Cycle average')
+            ax1.scatter(dst.time, dst.pitch, s=10)
+            ax1.set(ylabel='Surface pitch (deg)')
+
+            ax2.plot( cycle_av.time,cycle_av.surf_depth,c='r', label='Cycle average')
+            ax2.scatter(dst.time, dst.surf_depth, s=10)
+            ax2.set(ylabel='Surface depth (m)')
+            [a.legend(loc=2) for a in [ax1,ax2]]
 
         ax3.plot(time, drift_dist)
         ax3.scatter(time, drift_dist, s=10)

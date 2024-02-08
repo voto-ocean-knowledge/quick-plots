@@ -27,10 +27,10 @@ def load_all_cmd(path):
                           "LOG_MSG": df.LOG_MSG})
         a = new_cmd['LOG_MSG'].str.split(',', expand=True)
         data = pd.concat([new_cmd, a], axis=1)
-        sub_data['Cycle'] = np.nan
-        cycle = sub_data.where(sub_data[0] == '$SEAMRS')
+        data['Cycle'] = np.nan
+        cycle = data.where(data[0] == '$SEAMRS')
         cyclenum = cycle[3].dropna(how='all').unique()
-        a = sub_data.iloc[np.where((sub_data.LOG_MSG == 'Glider Connected !') | (sub_data.LOG_MSG == 'Glider Hang !'))]
+        a = data.iloc[np.where((data.LOG_MSG == 'Glider Connected !') | (data.LOG_MSG == 'Glider Hang !'))]
 
         for i in range(len(cyclenum)):
             start = cycle.where(cycle[3] == cyclenum[i]).dropna(how='all').index[0]
@@ -39,7 +39,7 @@ def load_all_cmd(path):
             i_start = a.index[int(np.abs(a.index - start).argmin())]
             i_end = a.index[int(np.abs(a.index - end).argmin())]
 
-            sub_data.loc[i_start:i_end, 'Cycle'] = int(cyclenum[i])
+            data.loc[i_start:i_end, 'Cycle'] = int(cyclenum[i])
             
     # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
     sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')

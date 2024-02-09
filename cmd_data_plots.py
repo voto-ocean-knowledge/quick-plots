@@ -36,7 +36,7 @@ def load_all_cmd(path):
         data['Cycle'] = data['Cycle'].ffill()
         data['Cycle'] = data['Cycle'].astype(int)
     # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
-    sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')
+    sub_data = data.where((data.Cycle > 2 ) & (data.Cycle < data.Cycle.max() - 2)).dropna(how='all')
     return sub_data
 
 def load_cmd(path):

@@ -23,24 +23,18 @@ def load_all_cmd(path):
         data['DATE_TIME'] = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
         data['Cycle'] = df.Cycle
     else:
+        df = pd.read_csv('C:/Users/monfo/OneDrive/Desktop/VOTO/CMD_data/glimpse-data/SEA044/000083/G-Logs/sea044.83.com.raw.log', sep=";", usecols=range(0, 6), header=0)
         new_cmd = pd.DataFrame({"DATE_TIME": pd.to_datetime(df.DATE_TIME, dayfirst=True, yearfirst=False, ),
-                          "LOG_MSG": df.LOG_MSG})
+                                  "LOG_MSG": df.LOG_MSG})
         a = new_cmd['LOG_MSG'].str.split(',', expand=True)
         data = pd.concat([new_cmd, a], axis=1)
-        data['Cycle'] = np.nan
-        cycle = data.where(data[0] == '$SEAMRS')
-        cyclenum = cycle[3].dropna(how='all').unique()
-        a = data.iloc[np.where((data.LOG_MSG == 'Glider Connected !') | (data.LOG_MSG == 'Glider Hang !'))]
-
-        for i in range(len(cyclenum)):
-            start = cycle.where(cycle[3] == cyclenum[i]).dropna(how='all').index[0]
-            end = cycle.where(cycle[3] == cyclenum[i]).dropna(how='all').index[-1]
-
-            i_start = a.index[int(np.abs(a.index - start).argmin())]
-            i_end = a.index[int(np.abs(a.index - end).argmin())]
-
-            data.loc[i_start:i_end, 'Cycle'] = int(cyclenum[i])
-            
+        data['Cycle'] = data.where(data[0] == '$SEAMRS')[3]
+        glider_hang= data.where(data.LOG_MSG == 'Glider Hang !').dropna(how='all').index
+        data.loc[glider_hang, 'Cycle']=9999
+        data['Cycle'] = data['Cycle'].backfill()
+        data.loc[data.Cycle==9999, 'Cycle']=np.nan
+        data['Cycle'] = data['Cycle'].ffill()
+        data['Cycle'] = data['Cycle'].astype(int)
     # Remove data from the first and last 2h of the mission as we generally spend a lot of time at surface 
     sub_data = data.where((data.DATE_TIME > data.DATE_TIME.min() + datetime.timedelta(hours=2)) & (data.DATE_TIME < data.DATE_TIME.max() - datetime.timedelta(hours=2))).dropna(how='all')
     return sub_data

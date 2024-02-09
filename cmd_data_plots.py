@@ -23,7 +23,7 @@ def load_all_cmd(path):
         data['DATE_TIME'] = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
         data['Cycle'] = df.Cycle
     else:
-        df = pd.read_csv('C:/Users/monfo/OneDrive/Desktop/VOTO/CMD_data/glimpse-data/SEA044/000083/G-Logs/sea044.83.com.raw.log', sep=";", usecols=range(0, 6), header=0)
+        df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0)
         new_cmd = pd.DataFrame({"DATE_TIME": pd.to_datetime(df.DATE_TIME, dayfirst=True, yearfirst=False, ),
                                   "LOG_MSG": df.LOG_MSG})
         a = new_cmd['LOG_MSG'].str.split(',', expand=True)

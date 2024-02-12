@@ -63,38 +63,58 @@ def load_cmd(path):
     return df_glider
 
 
-def measure_drift(cmd):
-    drift_dist = np.zeros([len(cmd['Cycle'].unique())])
-    drift_x = np.zeros([len(cmd['Cycle'].unique())])
-    drift_y = np.zeros([len(cmd['Cycle'].unique())])
-    u_vel = np.zeros([len(cmd['Cycle'].unique())])
-    v_vel = np.zeros([len(cmd['Cycle'].unique())])
-    speed = np.zeros([len(cmd['Cycle'].unique())])
-    theta = np.zeros([len(cmd['Cycle'].unique())])
-    time = np.zeros([len(cmd['Cycle'].unique())]).astype(pd._libs.tslibs.timestamps.Timestamp)
-    total_time = np.zeros([len(cmd['Cycle'].unique())])
+def measure_drift(path):
+    data = load_all_cmd(path)
+    loc = load_cmd(path)
+    drift_dist = np.zeros([len(data['Cycle'].unique())])
+    drift_x = np.zeros([len(data['Cycle'].unique())])
+    drift_y = np.zeros([len(data['Cycle'].unique())])
+    u_vel = np.zeros([len(data['Cycle'].unique())])
+    v_vel = np.zeros([len(data['Cycle'].unique())])
+    speed = np.zeros([len(data['Cycle'].unique())])
+    theta = np.zeros([len(data['Cycle'].unique())])
+    time = np.zeros([len(data['Cycle'].unique())]).astype(pd._libs.tslibs.timestamps.Timestamp)
+    total_time = np.zeros([len(data['Cycle'].unique())])
 
-    for i in tqdm(range(len(cmd['Cycle'].unique()))):
-        cycle_num = cmd['Cycle'].unique()
-        loc_data = cmd.where(cmd['Cycle'] == cycle_num[i]).dropna(how='all')
+    for i in tqdm(range(len(data['Cycle'].unique()))):
+        cycle_num = data['Cycle'].unique()
+        loc_data = loc.where(loc['Cycle'] == cycle_num[i]).dropna(how='all')
+        if len(loc_data) < 1:
+            drift_dist[i] = np.nan
+            drift_y[i] = np.nan
+            drift_x[i] = np.nan
+            speed[i] = np.nan
+            u_vel[i] = np.nan
+            v_vel[i] = np.nan
+            theta[i] = np.nan
+            time[i] = np.nan
+            total_time[i] = np.nan
+        else:
+            drift_dist[i] = geopy.distance.distance((float(loc_data.lat.iloc[0]), float(loc_data.lon.iloc[0])),
+                                                    (float(loc_data.lat.iloc[-1]), float(loc_data.lon.iloc[-1]))).m
+            drift_x[i] = 111 * 1000 * (float(loc_data.lon.iloc[0]) - float(loc_data.lon.iloc[-1])) * np.cos(
+                np.deg2rad(float(loc_data.lon.iloc[0])))
+            drift_y[i] = 111 * 1000 * (float(loc_data.lat.iloc[0]) - float(loc_data.lat.iloc[-1]))
+            speed[i] = drift_dist[i] / float(
+                (loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns'))
+            u_vel[i] = drift_x[i] / float(
+                (loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns'))
+            v_vel[i] = drift_y[i] / float(
+                (loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns'))
+            theta[i] = (270 - np.rad2deg(math.atan2(drift_y[i], drift_x[i]))) % 360
+            time[i] = (loc_data.time.iloc[-1])
+            total_time[i] = float((loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns')) / 60
+            
+        df_vel = pd.DataFrame({"drift_dist": drift_dist,
+                              "drift_y": drift_y,
+                               "drift_x": drift_x,
+                              "speed": speed,
+                              "u_vel": u_vel,
+                              "v_vel": v_vel,
+                              "theta": theta,
+                              "time": time})
 
-        drift_dist[i] = geopy.distance.distance((float(loc_data.lat.iloc[0]), float(loc_data.lon.iloc[0])),
-                                                (float(loc_data.lat.iloc[-1]), float(loc_data.lon.iloc[-1]))).m
-        drift_x[i] = 111 * 1000 * (float(loc_data.lon.iloc[0]) - float(loc_data.lon.iloc[-1])) * np.cos(
-            np.deg2rad(float(loc_data.lon.iloc[0])))
-        drift_y[i] = 111 * 1000 * (float(loc_data.lat.iloc[0]) - float(loc_data.lat.iloc[-1]))
-        speed[i] = drift_dist[i] / float(
-            (loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns'))
-        u_vel[i] = drift_x[i] / float(
-            (loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns'))
-        v_vel[i] = drift_y[i] / float(
-            (loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns'))
-        theta[i] = (270 - np.rad2deg(math.atan2(drift_y[i], drift_x[i]))) % 360
-        time[i] = (loc_data.time.iloc[-1])
-        total_time[i] = float((loc_data.time.iloc[-1] - loc_data.time.iloc[0]) / np.timedelta64(1000000000, 'ns')) / 60
-
-    return drift_dist, drift_y, drift_x, speed, u_vel, v_vel, theta, time, total_time
-
+    return df_vel.dropna(how='all'), total_time
 
 def dst_data(path):
     nmea_sep = load_all_cmd(path)
@@ -127,7 +147,7 @@ def make_all_plots(path_to_cmdlog):
         _log.debug("Command console data missing or too few data points as the mission just started")
         return fig        
     _log.debug("Command console data loaded. Starting with drift and velocities computation")
-    drift_dist, drift_y, drif_x, speed, u_vel, v_vel, theta, time, tot_time = measure_drift(active_m1)
+    drift_df, tot_time = measure_drift(path_to_cmdlog)
     _log.debug("Drift computed. Starting with DST")
     dst = dst_data(path_to_cmdlog)
     cycle_df = dst.copy()
@@ -167,18 +187,17 @@ def make_all_plots(path_to_cmdlog):
             [a.legend(loc=2) for a in [ax1,ax2]]
             [a.grid() for a in [ax1,ax2]]
 
-        ax3.plot(time, drift_dist)
-        ax3.scatter(time, drift_dist, s=10)
+        ax3.plot(drift_df.time, drift_df.drift_dist)
+        ax3.scatter(drift_df.time, drift_df.drift_dist, s=10)
         ax3.set(ylabel='Surface drfit \n(m)')
 
-        ax4.plot(time, theta)
-        ax4.scatter(time, theta, s=10)
+        ax4.plot(drift_df.time, drift_df.theta)
+        ax4.scatter(drift_df.time, drift_df.theta, s=10)
         ax4.set(ylabel='Drift direction \n(deg)')
 
-        ax5.plot(time, speed)
-        ax5.scatter(time, speed, s=10)
+        ax5.plot(drift_df.time, drift_df.speed)
+        ax5.scatter(drift_df.time, drift_df.speed, s=10)
         ax5.set(ylabel='Surface currents velocity \n(m/s)')
-
         conn = np.round(cut.groupby('Cycle').count().LOG_MSG.mean(), 1)
         ax6.scatter(cut.groupby('Cycle').count().index, cut.groupby('Cycle').count().LOG_MSG / 2,
                     label=f'Average num of connections is {conn} ', s=10)

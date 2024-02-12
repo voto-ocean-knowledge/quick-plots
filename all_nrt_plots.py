@@ -4,7 +4,7 @@ from glidertools_plots import public_plots
 import matplotlib.pyplot as plt
 import logging
 _log = logging.getLogger(__name__)
-
+bad_missions = ((57, 75), (70, 29), (66, 45))
 
 if __name__ == '__main__':
     logging.basicConfig(filename='/data/log/nrt_plots.log',
@@ -19,6 +19,9 @@ if __name__ == '__main__':
         parts = ts_file.parts
         glider = int(parts[-4][3:])
         mission = int(parts[-3][1:])
+        if (glider, mission) in bad_missions:
+            _log.info(f"this missions is to be skipped SEA{glider} M{mission}")
+            continue
         outdir = pathlib.Path(f"/data/plots/nrt/SEA{glider}/M{mission}/")
         _log.info(f"process for SEA{glider}, M{mission}")
         if not outdir.exists():

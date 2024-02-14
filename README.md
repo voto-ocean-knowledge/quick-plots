@@ -1,2 +1,2 @@
 # quick-plots
-Automatic plotting routines for pyglider produiced netcdfs
+Automatic plotting routines for pyglider produced netcdfs

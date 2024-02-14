@@ -8,3 +8,4 @@ boto3
 gsw
 cartopy
 scipy
+geopy

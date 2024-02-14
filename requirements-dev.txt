@@ -1,0 +1,10 @@
+pytest
+numpy
+matplotlib
+xarray
+netcdf4
+cmocean
+boto3
+gsw
+cartopy
+scipy

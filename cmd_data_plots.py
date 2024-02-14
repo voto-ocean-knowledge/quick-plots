@@ -11,7 +11,6 @@ import datetime
 
 _log = logging.getLogger(__name__)
 
-
 def load_all_cmd(path):
     df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0)
     if("Message" in df.columns):

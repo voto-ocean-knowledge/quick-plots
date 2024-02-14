@@ -8,3 +8,4 @@ gsw
 cartopy
 scipy
 geopy
+tqdm

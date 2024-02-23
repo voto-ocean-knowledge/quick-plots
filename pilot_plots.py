@@ -34,6 +34,7 @@ def battery_plots(combined_nav_file, out_dir):
     fig.savefig(filename, format='png', transparent=True)
 
     # Prediction plot
+    df = df.dropna()
     df_3day = df[df.index > df.index.max() - datetime.timedelta(days=3)]
     regr = linear_model.LinearRegression()
     regr.fit(df_3day.index.values.reshape(-1, 1), df_3day['Voltage'].values.reshape(-1, 1))
@@ -89,3 +90,9 @@ def battery_plots(combined_nav_file, out_dir):
     dline = f"{datetime.datetime.now()},{glider},{mission},{v_per_day},{recover},{end}\n"
     with open("/data/plots/nrt/battery_prediction.csv", "a") as file:
         file.write(dline)
+
+
+if __name__ == '__main__':
+    from pathlib import Path
+    battery_plots(Path('/data/data_l0_pyglider/nrt/SEA44/M85/rawnc/Martorn-rawgli.parquet'), '.')
+    

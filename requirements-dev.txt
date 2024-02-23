@@ -4,9 +4,11 @@ matplotlib
 xarray
 netcdf4
 cmocean
-boto3
 gsw
 cartopy
 scipy
 geopy
 tqdm
+polars
+scikit-learn
+pyarrow

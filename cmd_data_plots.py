@@ -116,14 +116,16 @@ def measure_drift(path):
 
     return df_vel.dropna(how='all'), total_time
 
+
 def dst_data(path):
     nmea_sep = load_all_cmd(path)
     time = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').DATE_TIME
     surf_z = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6]
     surf_z = surf_z[~surf_z.astype(str).str.lower().str.contains('nan')]
+    pitch_raw = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4]
     dst_info = pd.DataFrame({"time": time,
-                             "pitch": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4].astype(float),
-                             "surf_depth":surf_z[surf_z.str.contains('\d', regex=True).astype(bool)].astype(float),
+                             "pitch": pitch_raw[pitch_raw!=""].astype(float),
+                             "surf_depth": surf_z[surf_z.str.contains('\d', regex=True).astype(bool)].astype(float),
                              "Cycle": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').Cycle})
     return dst_info
 

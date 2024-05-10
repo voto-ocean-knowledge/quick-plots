@@ -7,13 +7,12 @@ import geopy.distance
 import math
 import logging
 from pathlib import Path
-import datetime
 
 _log = logging.getLogger(__name__)
 
 
 def load_all_cmd(path):
-    df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0)
+    df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0, encoding_errors='ignore')
     if("Message" in df.columns):
         new_cmd = pd.DataFrame({"DATE_TIME": pd.to_datetime(df['Date'] + ' ' + df['Time'], dayfirst=True, yearfirst=False,),
                               "LOG_MSG": df.Message,
@@ -23,7 +22,6 @@ def load_all_cmd(path):
         data['DATE_TIME'] = pd.to_datetime(data.DATE_TIME, dayfirst=True, yearfirst=False, )
         data['Cycle'] = df.Cycle
     else:
-        df = pd.read_csv(path, sep=";", usecols=range(0, 6), header=0)
         new_cmd = pd.DataFrame({"DATE_TIME": pd.to_datetime(df.DATE_TIME, dayfirst=True, yearfirst=False, ),
                                   "LOG_MSG": df.LOG_MSG})
         a = new_cmd['LOG_MSG'].str.split(',', expand=True)

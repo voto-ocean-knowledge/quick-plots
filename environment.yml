@@ -13,3 +13,9 @@ dependencies:
         - pandas
         - tqdm
         - geopy
+        - pyaml
+        - ioos_qc
+        - polars
+        - scikit-learn
+        - plotly
+        - pyarrow

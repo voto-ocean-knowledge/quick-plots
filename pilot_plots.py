@@ -98,4 +98,4 @@ def battery_plots(combined_nav_file, out_dir):
 
 if __name__ == '__main__':
     from pathlib import Path
-    battery_plots(Path('/data/data_l0_pyglider/nrt/SEA76/M25/rawnc/Fibbla-rawgli.parquet'), '.')
+    battery_plots(Path('/data/data_l0_pyglider/nrt/SEA63/M73/rawnc/Fibbla-rawgli.parquet'), '.')

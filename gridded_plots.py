@@ -362,3 +362,8 @@ def make_map(nc, filename):
     _log.info(f"writing map to {filename_map}")
     fig.savefig(filename_map, format='png', transparent=True)
     return filename_map
+
+
+
+if __name__ == '__main__':
+    create_plots(Path("/data/data_l0_pyglider/nrt/SEA76/M25/gridfiles/mission_grid.nc"), Path("/home/callum/Downloads"), True)

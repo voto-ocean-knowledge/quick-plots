@@ -18,7 +18,7 @@ def public_plots(nc, plots_dir):
     end = pd.to_datetime(ds.time.max().values)
     ds = ds.sel(time=slice(end - datetime.timedelta(days=60), end))
     # Apply flags from ioos
-    ds = apply_flags(ds, var_max_flags={"oxygen_concentration": 4, "cdom": 3})
+    ds = apply_flags(ds, var_max_flags={"oxygen_concentration": 4, "cdom": 4})
     # Prepare a variable of averaged time per profile. This is used in plotting later
     profile_time = ds.time.values.copy()
     profile_index = ds.profile_index
@@ -73,3 +73,8 @@ def public_plots(nc, plots_dir):
     plt.tight_layout()
     filename = plots_dir / f'SEA{ds.glider_serial}_M{ds.deployment_id}_gt.png'
     plt.savefig(filename, format='png', transparent=True)
+
+
+if __name__ == '__main__':
+    from pathlib import Path
+    public_plots(Path("/data/data_l0_pyglider/nrt/SEA76/M25/timeseries/mission_timeseries.nc"), Path("/home/callum/Downloads"))

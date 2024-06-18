@@ -187,7 +187,7 @@ def grid_data(
     # -DB creates a new variable where instead of variable the bin category
     # is mentioned (sort of like a discretization)
 
-    grp = Series(z).groupby([x, bins])  # -DB put z into the many bins (like 2D hist)
+    grp = Series(z).groupby([x, bins], observed=False)  # -DB put z into the many bins (like 2D hist)
     grp_agg = getattr(
         grp, how
     )()  # -DB basically does grp.how() or in this case grp.mean()

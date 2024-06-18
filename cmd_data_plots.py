@@ -29,7 +29,7 @@ def load_all_cmd(path):
         data['Cycle'] = data.where(data[0] == '$SEAMRS')[3]
         glider_hang= data.where(data.LOG_MSG == 'Glider Hang !').dropna(how='all').index
         data.loc[glider_hang, 'Cycle']=9999
-        data['Cycle'] = data['Cycle'].backfill()
+        data['Cycle'] = data['Cycle'].bfill()
         data.loc[data.Cycle==9999, 'Cycle']=np.nan
         data['Cycle'] = data['Cycle'].ffill()
         data['Cycle'] = data['Cycle'].astype(int)
@@ -55,9 +55,10 @@ def load_cmd(path):
         return res
 
     df_glider = pd.DataFrame({"time": cmd.dropna(subset=['lon', 'lat']).DATE_TIME,
-                              "lon": dd_coord(cmd['lon'].dropna().astype(float).values),
-                              "lat": dd_coord(cmd['lat'].dropna().astype(float).values),
-                              "Cycle": cmd.dropna(subset=['lon', 'lat']).Cycle.astype(int)})
+                              "lon": dd_coord(cmd.dropna(subset=['lon', 'lat'])['lon'].astype(float).values),
+                              "lat": dd_coord(cmd.dropna(subset=['lon', 'lat'])['lat'].astype(float).values),
+                              "Cycle": cmd.dropna(subset=['lon', 'lat']).Cycle.astype(int)
+                              })
     return df_glider
 
 
@@ -117,15 +118,15 @@ def measure_drift(path):
 
 def dst_data(path):
     nmea_sep = load_all_cmd(path)
-    time = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').DATE_TIME
-    surf_z = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[6]
-    surf_z = surf_z[~surf_z.astype(str).str.lower().str.contains('nan')]
-    pitch_raw = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')[4]
-    dst_info = pd.DataFrame({"time": time,
-                             "pitch": pitch_raw[pitch_raw!=""].astype(float),
-                             "surf_depth": surf_z[surf_z.str.contains('\d', regex=True).astype(bool)].astype(float),
-                             "Cycle": nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all').Cycle})
-    return dst_info
+    nmea_valid = nmea_sep.where(nmea_sep[0] == '$SEADST').dropna(how='all')
+    dst_raw = pd.DataFrame({
+                             "pitch": nmea_valid[4],
+                             "surf_depth": nmea_valid[6],
+                             "Cycle": nmea_valid.Cycle
+    })
+    dst_numeric = dst_raw.apply(pd.to_numeric, errors='coerce')
+    dst_numeric['time'] = nmea_valid.DATE_TIME
+    return dst_numeric
 
 
 def time_connections(path):
@@ -245,4 +246,4 @@ if __name__ == '__main__':
                         format='%(asctime)s %(levelname)-8s %(message)s',
                         level=logging.WARNING,
                         datefmt='%Y-%m-%d %H:%M:%S')
-    command_cosole_log_plots(44, 85, Path("."))
+    command_cosole_log_plots(45, 87, Path("."))

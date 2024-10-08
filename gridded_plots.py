@@ -334,8 +334,8 @@ def make_map(nc, filename):
     dataset = xr.open_dataset(nc)
     lats = dataset.latitude.values
     lons = dataset.longitude.values
-    coord = cartopy.crs.AzimuthalEquidistant(central_longitude=np.mean(lons),
-                                             central_latitude=np.mean(lats))
+    coord = cartopy.crs.AzimuthalEquidistant(central_longitude=np.nanmean(lons),
+                                             central_latitude=np.nanmean(lats))
     pc = cartopy.crs.PlateCarree()
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(111, projection=coord)

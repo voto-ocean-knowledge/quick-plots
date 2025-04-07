@@ -46,7 +46,9 @@ glider_variables = (
     #    'DOWN_IRRADIANCE380',
     #    'DOWN_IRRADIANCE490',
     #    'DOWN_IRRADIANCE532',
-    'molar_nitrate'
+    'molar_nitrate',
+    'velocity_N_DAC_reference_sb_corrected',
+    'velocity_E_DAC_reference_sb_corrected',
 )
 
 # create dictionary to match each variable in glider_variables to a colourmap
@@ -66,6 +68,8 @@ cmap_dict['density'] = cmo.dense
 cmap_dict['potential_density'] = cmo.dense
 cmap_dict['chlorophyll'] = cmo.algae
 cmap_dict['cdom'] = cmo.turbid
+cmap_dict['velocity_N_DAC_reference_sb_corrected'] = cmo.balance
+cmap_dict['velocity_E_DAC_reference_sb_corrected'] = cmo.balance
 
 labels_dict = {'Celsius': '$^{\\circ}$C',
                'None': '',
@@ -75,6 +79,7 @@ labels_dict = {'Celsius': '$^{\\circ}$C',
                'μE/m^2/s': 'µE m$^{-1}$ s$^{-1}$',
                '1': '',
                'kg m-3': 'kg m$^{-3}$',
+               'm.s-1': 'm s$^{-1}$',
                'mmol m-3': 'mmol m$^{-3}$',
                'mg m-3': 'mg m$^{-3}$',
                'g kg^-1': 'g kg$^{-1}$',
@@ -85,7 +90,9 @@ labels_dict = {'Celsius': '$^{\\circ}$C',
                'cdom': 'colored dissolved organic matter',
                'potential_density': 'potential density',
                'potential_temperature': 'potential temperature',
-               'absolute_salinity': 'absolute salinity'
+               'absolute_salinity': 'absolute salinity',
+               'velocity_E_DAC_reference_sb_corrected': 'Eastward velocity referenced to DAC',
+               'velocity_N_DAC_reference_sb_corrected': 'Northward velocity referenced to DAC',
                }
 
 
@@ -267,7 +274,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
             days = np.arange(1, 32)
         ax.xaxis.set_major_locator(mdates.MonthLocator())
         ax.xaxis.set_minor_locator(mdates.DayLocator(days))
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("\n%b %Y"))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("\n %d %b %Y"))
         ax.xaxis.set_minor_formatter(mdates.DateFormatter("%d"))
         ax.tick_params(axis="x", which="both", length=4)
         plt.setp(ax.get_xticklabels(), rotation=0, ha="center")
@@ -366,4 +373,4 @@ def make_map(nc, filename):
 
 
 if __name__ == '__main__':
-    create_plots(Path("/data/data_l0_pyglider/nrt/SEA76/M25/gridfiles/mission_grid.nc"), Path("/home/callum/Downloads"), True)
+    create_plots(Path("/data/data_l0_pyglider/complete_mission/SEA55/M85/gridfiles/gridded_adcp_gliderad2cp.nc"), Path("/home/callum/Downloads"), True)

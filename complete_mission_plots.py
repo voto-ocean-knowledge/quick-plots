@@ -1,9 +1,8 @@
 import sys
 import os
-import pathlib
 import logging
-
-script_dir = pathlib.Path(__file__).parent.absolute()
+from pathlib import Path
+script_dir = Path(__file__).parent.absolute()
 sys.path.append(str(script_dir))
 os.chdir(script_dir)
 from gridded_plots import create_plots, make_map
@@ -17,13 +16,18 @@ def complete_plots(glider, mission):
                         format='%(asctime)s %(levelname)-8s %(message)s',
                         level=logging.INFO,
                         datefmt='%Y-%m-%d %H:%M:%S')
-    mission_dir = f'/data/data_l0_pyglider/complete_mission/SEA{glider}/M{mission}/gridfiles/'
-    try:
-        netcdf = list(pathlib.Path(mission_dir).glob('*.nc'))[0]
-    except IndexError:
-        _log.error(f"nc file in {mission_dir} not found")
-        return
-    outdir = pathlib.Path(f'/data/plots/complete_mission/SEA{glider}/M{mission}/')
+    mission_dir = Path(f'/data/data_l0_pyglider/complete_mission/SEA{glider}/M{mission}/gridfiles/')
+    netcdf = None
+    for fn in ['gridded_adcp_gliderad2cp.nc', 'gridded_gliderad2cp.nc']:
+        if (mission_dir / fn).exists():
+            netcdf = mission_dir / fn
+    if not netcdf:
+        try:
+            netcdf = list(mission_dir.glob('*.nc'))[0]
+        except IndexError:
+            _log.error(f"nc file in {mission_dir} not found")
+            return
+    outdir = Path(f'/data/plots/complete_mission/SEA{glider}/M{mission}/')
     if not outdir.exists():
         outdir.mkdir(parents=True)
     if 'scatter' in sys.argv:

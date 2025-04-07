@@ -1,6 +1,7 @@
 import datetime
 import numpy as np
 import pytz
+import pandas as pd
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 14})
 from pathlib import Path
@@ -71,14 +72,7 @@ def comp_plot(glider, ctd):
     return fig, ax
 
 
-e = init_erddap()
-e.dataset_id = "ctd_deployment"
-df_ctd = e.to_xarray().drop_dims("timeseries").to_pandas()
-df_ctd.index = df_ctd["time"]
-df_ctd = df_ctd.sort_index()
-
-
-def nearby_ctd(ds_glider, comparison_plots=False, max_dist=0.5, max_days=2, num_dives=5):
+def nearby_ctd(df_ctd, ds_glider, comparison_plots=False, max_dist=0.5, max_days=2, num_dives=5):
 
     name = f'SEA0{ds_glider.attrs["glider_serial"]}_M{ds_glider.attrs["deployment_id"]}'
     df_glider = ds_glider.to_pandas()
@@ -130,6 +124,7 @@ def nearby_ctd(ds_glider, comparison_plots=False, max_dist=0.5, max_days=2, num_
 
 
 def download_glider_datasets(dataset_ids):
+    e = init_erddap()
     dataset_dict = {}
     for dataset_id in dataset_ids:
         e.dataset_id = dataset_id
@@ -142,21 +137,16 @@ def download_glider_datasets(dataset_ids):
     return dataset_dict
 
 
-def recent_ctds():
-    _log.info("start to process all CTDs")
+def recent_ctds(df_relevant, df_ctd):
+    _log.info("start to process all recent CTDs")
     ctd_casts = df_ctd.groupby("cast_no").first()
-    e.dataset_id = "allDatasets"
-    df_datasets = e.to_pandas(parse_dates=['minTime (UTC)', 'maxTime (UTC)'])
-
-    df_datasets.set_index("datasetID", inplace=True)
-    df_datasets.drop("allDatasets", inplace=True)
-    df_datasets = df_datasets[df_datasets.index.str[:3] == "nrt"]
-    df_relevant = df_datasets
     mintime = ctd_casts.time.min().replace(tzinfo=pytz.utc) - datetime.timedelta(days=1)
     maxtime = ctd_casts.time.max().replace(tzinfo=pytz.utc) + datetime.timedelta(days=1)
-
     df_relevant = df_relevant[df_relevant["minTime (UTC)"] > mintime]
     df_relevant = df_relevant[df_relevant["maxTime (UTC)"] < maxtime]
+    if df_relevant.empty:
+        _log.info("no new ctds to process")
+        return
     df_relevant["longitude"] = (df_relevant["minLongitude (degrees_east)"] + df_relevant[
         "maxLongitude (degrees_east)"]) / 2
     df_relevant["latitude"] = (df_relevant["minLatitude (degrees_north)"] + df_relevant[
@@ -172,14 +162,14 @@ def recent_ctds():
     df_relevant = df_relevant.sort_values('minTime (UTC)')
     nrt_dict = download_glider_datasets(df_relevant.index)
     i = 0
-    summary_plot(df_relevant, ctd_casts, nrt_dict)
+    summary_plot(df_relevant, ctd_casts, nrt_dict, df_ctd)
     for mission, ds in nrt_dict.items():
         _log.info(f"process: {mission}")
         try:
-            ctds = nearby_ctd(ds, comparison_plots=True, num_dives=4)
+            ctds = nearby_ctd(df_ctd, ds, comparison_plots=True, num_dives=4)
         except:
             _log.warning("4 dives insufficient. Expanding to 8")
-            ctds = nearby_ctd(ds, comparison_plots=True, num_dives=8)
+            ctds = nearby_ctd(df_ctd, ds, comparison_plots=True, num_dives=8)
 
         found = list(ctds.keys())
         if found == ['deployment', 'recovery']:
@@ -188,17 +178,16 @@ def recent_ctds():
         _log.warning(f'{mission[4:]}, missing {missing}, {ds.attrs["basin"]}')
         i += 1
     _log.info(f"total bad: {i}")
-    _log.info("completed process all CTDs")
 
 
-def summary_plot(df_relevant, ctd_casts, nrt_dict):
+def summary_plot(df_relevant, ctd_casts, nrt_dict, df_ctd):
     colors = plt.rcParams["axes.prop_cycle"].by_key()["color"]
 
     fig, ax = plt.subplots(figsize=(12, 8))
     diff = 0.15
     for i, (name, row) in enumerate(df_relevant.iterrows()):
         ds = nrt_dict[name]
-        ctds = nearby_ctd(ds)
+        ctds = nearby_ctd(df_ctd, ds)
         found = list(ctds.keys())
         if found == ['deployment', 'recovery']:
             continue
@@ -222,4 +211,19 @@ def summary_plot(df_relevant, ctd_casts, nrt_dict):
 
 
 if __name__ == '__main__':
-    recent_ctds()
+    _log.info("start processing")
+    e = init_erddap()
+    e.dataset_id = "allDatasets"
+    df_datasets = e.to_pandas(parse_dates=['minTime (UTC)', 'maxTime (UTC)'])
+    df_datasets.set_index("datasetID", inplace=True)
+    df_datasets.drop("allDatasets", inplace=True)
+    df_datasets = df_datasets[df_datasets.index.str[:3] == "nrt"]
+    recent_datasets = df_datasets[df_datasets['maxTime (UTC)'] > pd.Timestamp.now().replace(tzinfo=pytz.utc) - pd.to_timedelta("60 days")]
+    _log.info("download ctds")
+    e.dataset_id = "ctd_deployment"
+    df_ctd_table = e.to_xarray(requests_kwargs={"timeout": 300}).drop_dims("timeseries").to_pandas()
+    df_ctd_table.index = df_ctd_table["time"]
+    df_ctd = df_ctd_table.sort_index()
+    recent_ctds(recent_datasets, df_ctd)
+    _log.info("completed process all CTDs")
+

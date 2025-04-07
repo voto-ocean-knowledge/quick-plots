@@ -81,7 +81,7 @@ def battery_plots(combined_nav_file, out_dir):
         ax.axvline(recover_3, color="red")
         ax.axvline(recover_5, color="red")
         ax.axvspan(recoveries[0], recoveries[1], alpha=0.1, color='red')
-        v_string = f"Voltage: {np.round(df['Voltage'].values[-1], 1)} V\n{losses[0]}-{losses[1]} V/day\nrecover {r_string}"
+        v_string = f"Voltage: {str(np.round(df['Voltage'].values[-1], 1))[:4]} V\n{losses[0]}-{losses[1]} V/day\nrecover {r_string}"
         ax.text(0.05, 0.08, v_string, transform=ax.transAxes)
         ax.grid()
         ax.set(ylabel="Voltage (v)", title=title)

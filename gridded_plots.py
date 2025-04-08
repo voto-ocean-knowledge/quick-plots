@@ -212,12 +212,21 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
 
     The intended use of the plotter function is to iterate over a list of variables,
     plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
+
+    if 'profile' in dataset.dims:
+        time = dataset.time.values
+        dataset = dataset.drop_dims('time')
+        dataset['time'] = ('profile', time)
     if not grid:
         # Quick fix for if glider has rebooted and 1970s datestamps have appeared mid mission
         dataset = dataset.sortby("time")
-        dataset = dataset.where(dataset.profile_direction < 0.)
-        end = pandas.to_datetime(dataset.time.values[-1])
-        dataset = dataset.sel(time=slice(end - datetime.timedelta(days=7), end))
+        if 'profile_direction' in dataset.variables:
+            dataset = dataset.where(dataset.profile_direction < 0.)
+        end = np.nanmax(dataset.time.values)
+        argmin =np.nanargmin(np.abs(dataset.time.mean(dim='depth')- (end -np.timedelta64(7, 'D'))) / np.timedelta64(1, 's'))
+        start = dataset.profile[argmin]
+        end = dataset.profile.max()
+        dataset = dataset.sel(profile=slice(start, end))
     num_variables = len(variables)
     fig, axs = plt.subplots(num_variables, 1, figsize=(12, 3.5 * num_variables), sharex="col")
     axs = axs.ravel()
@@ -258,11 +267,9 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
             if grid:
                 pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
             else:
-                time = ds.time.values
-                depth = ds.depth.values[::-1]
-                depth_grid = np.tile(depth, (len(time), 1)).T
-                time_grid = np.tile(time, (len(depth), 1))
-                pcol = ax.scatter(time_grid, depth_grid, c=ds.values[::-1, :], cmap=colormap)
+                time = dataset.time.values.T
+                depth = np.tile(dataset.depth.values, (len(dataset.profile), 1)).T
+                pcol = ax.scatter(time, depth, c=ds.values, cmap=colormap)
 
         var_sum = np.sum(~np.isnan(dataset[variable].data),axis=1)
         valid_depths = dataset[variable].depth.data[var_sum != 0.0]

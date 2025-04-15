@@ -213,7 +213,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
     The intended use of the plotter function is to iterate over a list of variables,
     plotting a pcolormesh style plot for each variable, where each variable has a colourmap assigned using a dict"""
 
-    if 'profile' in dataset.dims:
+    if 'profile' in dataset.dims and 'time' in dataset.dims:
         time = dataset.time.values
         dataset = dataset.drop_dims('time')
         dataset['time'] = ('profile', time)
@@ -265,7 +265,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
                                   norm=matplotlib.colors.LogNorm(vmin=np.nanmin(vals), vmax=np.nanmax(vals)))
         else:
             if grid:
-                pcol = ax.pcolor(ds.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
+                pcol = ax.pcolor(dataset.time.values, ds.depth, ds.values, cmap=colormap, shading='auto')
             else:
                 time = dataset.time.values.T
                 depth = np.tile(dataset.depth.values, (len(dataset.profile), 1)).T
@@ -380,4 +380,5 @@ def make_map(nc, filename):
 
 
 if __name__ == '__main__':
-    create_plots(Path("/data/data_l0_pyglider/complete_mission/SEA55/M85/gridfiles/gridded_adcp_gliderad2cp.nc"), Path("/home/callum/Downloads"), True)
+    create_plots(Path("/data/data_l0_pyglider/complete_mission/SEA77/M41/gridfiles/gridded.nc"), Path("/home/callum/Downloads"), True)
+    create_plots(Path("/data/data_l0_pyglider/complete_mission/SEA55/M85/gridfiles/gridded.nc"), Path("/home/callum/Downloads"), True)

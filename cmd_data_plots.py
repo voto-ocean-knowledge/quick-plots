@@ -227,14 +227,14 @@ def make_all_plots(path_to_cmdlog):
     return fig
 
 
-def command_cosole_log_plots(glider, mission, plots_dir):
-    _log.info(f"Make command console plots for SEA{glider} M{mission}")
-    cmd_log = Path(f"/data/data_raw/nrt/SEA{str(glider).zfill(3)}/{str(mission).zfill(6)}/G-Logs/sea{str(glider).zfill(3)}.{mission}.com.raw.log")
+def command_cosole_log_plots(platform_serial, mission, plots_dir):
+    _log.info(f"Make command console plots for {platform_serial} M{mission}")
+    cmd_log = Path(f"/data/data_raw/nrt/{platform_serial}/{str(mission).zfill(6)}/G-Logs/{platform_serial.lower()}.{mission}.com.raw.log")
     if not cmd_log.exists():
         _log.warning(f"No command log found at {cmd_log}")
         return
     make_all_plots(cmd_log)
-    filename = plots_dir / f'SEA{glider}_M{mission}_cmd_log.png'
+    filename = plots_dir / f'{platform_serial}_M{mission}_cmd_log.png'
     plt.savefig(filename, format='png', transparent=True)
     _log.debug(f"saved figure to {filename}")
 
@@ -246,4 +246,4 @@ if __name__ == '__main__':
                         format='%(asctime)s %(levelname)-8s %(message)s',
                         level=logging.WARNING,
                         datefmt='%Y-%m-%d %H:%M:%S')
-    command_cosole_log_plots(45, 87, Path("."))
+    command_cosole_log_plots("SEA045", 87, Path("."))

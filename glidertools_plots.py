@@ -71,7 +71,7 @@ def public_plots(nc, plots_dir):
         ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
         plt.colorbar(mappable=im, ax=ax, label=label_replace(ds[variable].units), aspect=13, pad=0.02)
     plt.tight_layout()
-    filename = plots_dir / f'SEA{ds.glider_serial}_M{ds.deployment_id}_gt.png'
+    filename = plots_dir / f'{ds.glider_serial}_M{ds.deployment_id}_gt.png'
     plt.savefig(filename, format='png', transparent=True)
 
 

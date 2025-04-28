@@ -10,13 +10,13 @@ from gridded_plots import create_plots, make_map
 _log = logging.getLogger(__name__)
 
 
-def complete_plots(glider, mission):
+def complete_plots(platform_serial, mission):
     logging.basicConfig(filename='/data/log/complete_mission/plots.log',
                         filemode='a',
                         format='%(asctime)s %(levelname)-8s %(message)s',
                         level=logging.INFO,
                         datefmt='%Y-%m-%d %H:%M:%S')
-    mission_dir = Path(f'/data/data_l0_pyglider/complete_mission/SEA{glider}/M{mission}/gridfiles/')
+    mission_dir = Path(f'/data/data_l0_pyglider/complete_mission/{platform_serial}/M{mission}/gridfiles/')
     netcdf = None
     for fn in ['gridded_adcp_gliderad2cp.nc', 'gridded_gliderad2cp.nc']:
         if (mission_dir / fn).exists():
@@ -27,7 +27,7 @@ def complete_plots(glider, mission):
         except IndexError:
             _log.error(f"nc file in {mission_dir} not found")
             return
-    outdir = Path(f'/data/plots/complete_mission/SEA{glider}/M{mission}/')
+    outdir = Path(f'/data/plots/complete_mission/{platform_serial}/M{mission}/')
     if not outdir.exists():
         outdir.mkdir(parents=True)
     if 'scatter' in sys.argv:

@@ -10,9 +10,9 @@ _log = logging.getLogger(__name__)
 
 def battery_plots(combined_nav_file, out_dir):
     parts = combined_nav_file.parts
-    glider = parts[-4][3:]
+    platform_serial = parts[-4]
     mission = parts[-3][1:]
-    title = f"SEA{glider.zfill(3)} M{mission}"
+    title = f"{platform_serial} M{mission}"
     df_polar = pl.read_parquet(combined_nav_file)
     df = pd.read_parquet(combined_nav_file)
     df.index = df_polar.select("time").to_numpy()[:, 0]
@@ -87,7 +87,7 @@ def battery_plots(combined_nav_file, out_dir):
         ax.set(ylabel="Voltage (v)", title=title)
         plt.xticks(rotation=45)
         ax.legend(loc=1)
-        dline = f"{datetime.datetime.now()},{glider},{mission},{v_per_days[1]},{recoveries[0]},{end}\n"
+        dline = f"{datetime.datetime.now()},{platform_serial},{mission},{v_per_days[1]},{recoveries[0]},{end}\n"
         with open("/data/plots/nrt/battery_prediction.csv", "a") as file:
             file.write(dline)
     plt.tight_layout()

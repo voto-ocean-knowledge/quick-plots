@@ -289,7 +289,7 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
         ax.set(xlabel='', ylabel='Depth (m)', ylim=(ymin, 0))
         plt.colorbar(mappable=pcol, ax=ax, label=label_replace(ds.units), aspect=13, pad=0.02)
     plt.tight_layout()
-    filename = plots_dir / f'SEA{glider}_M{mission}.png'
+    filename = plots_dir / f'{glider}_M{mission}.png'
     _log.info(f'writing figure to {filename}')
     fig.savefig(filename, format='png', transparent=True)
     return filename
@@ -354,7 +354,7 @@ def make_map(nc, filename):
     fig = plt.figure(figsize=(12, 6))
     ax = fig.add_subplot(111, projection=coord)
     attrs = dataset.attrs
-    fig.suptitle(f"SEA{attrs['glider_serial']} {attrs['glider_name']} mission {attrs['deployment_id']}")
+    fig.suptitle(f"{attrs['platform_serial']} {attrs['glider_name']} mission {attrs['deployment_id']}")
     ax.scatter(lons, lats, transform=pc, s=10)
     lon_extend = 3
     lat_extend = 1

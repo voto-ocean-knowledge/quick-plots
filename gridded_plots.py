@@ -273,7 +273,8 @@ def multiplotter(dataset, variables, plots_dir, glider='', mission='', grid=True
 
         var_sum = np.sum(~np.isnan(dataset[variable].data),axis=1)
         valid_depths = dataset[variable].depth.data[var_sum != 0.0]
-        ax.set_ylim(valid_depths.max(), valid_depths.min())
+        if len(valid_depths > 0):
+            ax.set_ylim(valid_depths.max(), valid_depths.min())
         ax.set_title(label_replace(str(variable)))
         if grid:
             days = (1, 5, 10, 15, 20, 25)

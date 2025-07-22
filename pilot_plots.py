@@ -18,6 +18,7 @@ def battery_plots(combined_nav_file, out_dir):
     df.index = df_polar.select("time").to_numpy()[:, 0]
     df = df[["Voltage"]]
     df = df[df.index > datetime.datetime(1980, 1, 1)]
+    df = df.sort_index()
 
     df_min = df.rolling(window=datetime.timedelta(hours=6)).min()
     df_mean = df.rolling(window=datetime.timedelta(hours=6)).mean()

@@ -41,6 +41,8 @@ def comp_plot(glider, ctd):
     fig, ax = plt.subplots(2, 2, figsize=(16, 12), sharey="row",)
     ax = ax.ravel()
     for i, variable in enumerate(("temperature", "salinity", "oxygen_concentration", "chlorophyll")):
+        if variable not in list(glider) or variable not in list(ctd):
+            continue
         if variable == "oxygen_concentration":
             cutoff = 9
         else:
@@ -137,7 +139,7 @@ def download_glider_datasets(dataset_ids):
     return dataset_dict
 
 
-def recent_ctds(df_relevant, df_ctd):
+def recent_ctds(df_relevant, df_ctd, summary=False):
     _log.info("start to process all recent CTDs")
     ctd_casts = df_ctd.groupby("cast_no").first()
     mintime = ctd_casts.time.min().replace(tzinfo=pytz.utc) - datetime.timedelta(days=1)
@@ -162,7 +164,9 @@ def recent_ctds(df_relevant, df_ctd):
     df_relevant = df_relevant.sort_values('minTime (UTC)')
     nrt_dict = download_glider_datasets(df_relevant.index)
     i = 0
-    summary_plot(df_relevant, ctd_casts, nrt_dict, df_ctd)
+    if summary:
+        summary_plot(df_relevant, ctd_casts, nrt_dict, df_ctd)
+        return
     for mission, ds in nrt_dict.items():
         _log.info(f"process: {mission}")
         try:
@@ -225,5 +229,6 @@ if __name__ == '__main__':
     df_ctd_table.index = df_ctd_table["time"]
     df_ctd = df_ctd_table.sort_index()
     recent_ctds(recent_datasets, df_ctd)
+    recent_ctds(df_datasets, df_ctd, summary=True)
     _log.info("completed process all CTDs")
 
